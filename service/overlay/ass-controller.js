@@ -465,8 +465,21 @@
         // whole thing every frame. Only feed it events within +/-WINDOW sec of the
         // playhead, re-fetching as we advance. assSubWindow=0 => whole track (old).
         var _wv = parseFloat(lsGet('assSubWindow', '60')); var WINDOW = isNaN(_wv) ? 60 : _wv;
-        var winCenter = -1e9;
-        var forceReload = false;   // set by seek; the poll consumes it once
+        // COVERAGE GATE (do NOT go back to a playhead-drift gate — here is why).
+        // The tee demuxes ONLY bytes the player has already pulled: demux.pushAt() runs
+        // inside up.on('data'), and the tee pauses that upstream once the player's buffer
+        // is full. So the DEMUX FRONTIER sits at playhead + player-read-ahead (measured
+        // ~28s on the C5, and far less on a dip or right after a seek) — a +/-WINDOW
+        // request is really only covered out to that frontier, NOT to +WINDOW.
+        // A drift gate reloads every WINDOW/3 (=20s) assuming ~WINDOW of future is loaded.
+        // It isn't: when read-ahead < ~22s the slice runs dry mid-window and the subs
+        // VANISH until the next drift reload. Instead, measure what we actually loaded
+        // (loadedUntil = last media time the slice covers) and reload BEFORE running past
+        // it. The cadence then self-throttles to the real coverage.
+        var _lv = parseFloat(lsGet('assSubLead', '8')); var LEAD = isNaN(_lv) ? 8 : _lv;                       // reload this many sec before running dry
+        var _mv = parseInt(lsGet('assSubMinReload', '3000'), 10); var MIN_RELOAD = isNaN(_mv) ? 3000 : _mv;    // floor on reparse rate; must stay < LEAD*1000
+        var winCenter = -1e9, loadedUntil = -1e9, lastLoadAt = 0, loading = false;
+        var forceReload = false;   // set by seek; cleared ONLY once a load actually commits
         var extKey = null, extGen = 0;   // EXTERNAL ('extra') sub: current selection id + async generation guard
         // On-demand fonts: OFF by default — Codex found it can drop an *unnamed* CJK
         // fallback attachment (-> tofu). Opt in with assFontDemand=1 once the lossless
@@ -485,15 +498,35 @@
         // Commit curIdx/lastCount ONLY after a load actually applies — otherwise a
         // transient /ass/tget failure would advance the gate and never retry until
         // the event count next grows (i.e. until a seek to novel bytes).
+        // ASS timecode -> seconds (the grammar mkv-subs.js emits).
+        function tcSec(s) { var m = /(\d+):(\d\d):(\d\d)[.,](\d+)/.exec(s); return m ? (+m[1]) * 3600 + (+m[2]) * 60 + (+m[3]) + (+('0.' + m[4])) : -1; }
+        // How far forward does this slice ACTUALLY cover? = max End over its Dialogue
+        // lines. Returns -1 when the slice holds nothing at/after the playhead, i.e. the
+        // demuxer hasn't reached these bytes yet (seek into unstreamed video, or the very
+        // first poll). Committing THAT hands libass a zero-event track — it paints an
+        // empty frame and clears the canvas — and then pins the gate for a whole reload
+        // cycle: the post-seek / start-of-episode blackout. Never commit an empty slice.
+        function coverOf(ass, ph) {
+            var re = /^Dialogue:[^,]*,[^,]*,([^,]*),/gm, m, end = -1, live = false;
+            while ((m = re.exec(ass)) !== null) { var e = tcSec(m[1]); if (e > end) end = e; if (e >= ph) live = true; }
+            return live ? end : -1;
+        }
         function load(idx, count, ph) {
             var q = '/ass/tget?u=' + uq + '&trk=' + idx;
             if (WINDOW > 0 && ph != null) q += '&t=' + ph + '&w=' + WINDOW;
+            loading = true; lastLoadAt = (window.performance && performance.now()) || Date.now();
             return fetch(q).then(function (r) { return r.ok ? r.text() : ''; }).then(function (ass) {
+                loading = false;
                 if (ctl !== cur || !ass || ass.length < 40) return;
+                var cover = coverOf(ass, ph == null ? 0 : ph);
+                if (cover < 0) { alog('tee: window empty at ph=' + ph + ' (demuxer behind) — not committing'); return; }
                 if (!attached) { var furls = fonts.map(function (n) { return '/ass/tfont?u=' + uq + '&f=' + encodeURIComponent(n); }); ctl.attach(ass, furls, avail); attached = true; subMsg('Subtitles ready', 1200); alog('tee attach trk=' + idx + ' len=' + ass.length + ' eager=' + furls.length + ' avail=' + (avail ? Object.keys(avail).length : 0)); }
                 else ctl.updateTrack(ass);
-                curIdx = idx; lastCount = count; if (ph != null) winCenter = ph;
-            });
+                curIdx = idx; lastCount = count; forceReload = false;
+                if (ph != null) winCenter = ph;
+                loadedUntil = cover;
+                alog('tee load ph=' + ph + ' len=' + ass.length + ' loadedUntil=' + cover.toFixed(1) + ' lead=' + (cover - (ph || 0)).toFixed(1));
+            }).catch(function () { loading = false; });
         }
         (function poll() {
             if (ctl !== cur) { try { ctl.video && ctl.video.removeEventListener('seeked', onSeek); } catch (e) {} return; }
@@ -515,19 +548,19 @@
                             .then(function (ass) {
                                 if (ctl !== cur || myGen !== extGen || window.__extraSubSel !== exId) return;   // stale/superseded
                                 if (!ass || ass.length < 40) { alog('ext-sub empty ' + exId); return; }
-                                ctl.attach(ass, [], null); attached = true; curIdx = -1; lastCount = -1;
+                                ctl.attach(ass, [], null); attached = true; curIdx = -1; lastCount = -1; loadedUntil = 1e9;   // whole SRT is loaded at once: never 'dry'
                                 alog('ext-sub attached ' + exId + ' len=' + ass.length);
                             }).catch(function () { if (myGen === extGen) extKey = null; });   // allow retry
                     }
                 } else if (attached || extKey) {              // nothing selected -> stop rendering ours
                     alog('tee: none selected -> detach'); try { ctl.detach(); } catch (e) {}
-                    attached = false; curIdx = -1; lastCount = -1; extKey = null;
+                    attached = false; curIdx = -1; lastCount = -1; extKey = null; loadedUntil = -1e9; winCenter = -1e9;
                 }
                 return setTimeout(poll, 700);
             }
             // An EMBEDDED track is selected. If we were showing an EXTERNAL sub, drop it
             // so the embedded path re-attaches JASSUB with the embedded font plan.
-            if (extKey) { extKey = null; attached = false; curIdx = -1; lastCount = -1; try { ctl.detach(); } catch (e) {} }
+            if (extKey) { extKey = null; attached = false; curIdx = -1; lastCount = -1; loadedUntil = -1e9; winCenter = -1e9; try { ctl.detach(); } catch (e) {} }
             fetch('/ass/track?u=' + uq).then(function (r) { return r.json(); }).then(function (s) {
                 if (ctl !== cur) return;
                 if (DEMAND && s.fontEager) {                 // on-demand: eager list + name->url map
@@ -540,20 +573,28 @@
                 if (!FPS_USER && s.videoFps > 0 && FPS !== s.videoFps) { FPS = s.videoFps; alog('frame-lock fps=' + s.videoFps.toFixed(3) + ' (from container)'); }
                 var trk = (s.tracks || [])[idx];
                 var ph = Math.floor((ctl.video && ctl.video.currentTime) || 0);
+                var nowMs = (window.performance && performance.now()) || Date.now();
+                // RUNNING DRY: the playhead is within LEAD sec of the end of what we hold,
+                // AND the tee has demuxed events we don't have yet (no point reparsing the
+                // same bytes — that cannot conjure events), AND we didn't just reparse.
+                // LEAD*1000 > MIN_RELOAD, so the throttle can never itself open a gap.
+                // This — not playhead drift — is what keeps subtitles on screen, because
+                // it follows the demuxer's real coverage instead of assuming it.
+                var dry = attached && idx === curIdx
+                          && ph > (loadedUntil - LEAD)
+                          && trk && trk.events > lastCount
+                          && (nowMs - lastLoadAt) > MIN_RELOAD;
+                // Backstop only (dry fires first for any sane LEAD < WINDOW/3).
                 var drift = WINDOW > 0 && Math.abs(ph - winCenter) > WINDOW / 3;
-                // Reload ONLY when we actually need different events: first attach,
-                // selection change, a seek, or the playhead drifting a third of the
-                // window from center. NOT on mere event-count growth: the streaming
-                // demuxer's total count climbs every poll (~1.5s) as it parses ahead,
-                // and reparsing the whole 6MB/20k-event OP track (a full libass
-                // setTrack) froze the worker ~0.5-1.5s EACH time -> the OP was frozen a
-                // third of the time. Drift-following keeps ~WINDOW of future loaded, so
-                // forward playback stays covered without the reparse storm.
-                if (trk && trk.events > 0 && (idx !== curIdx || !attached || forceReload || drift)) {
-                    forceReload = false;
-                    load(idx, trk.events, ph);   // commits only on success
+                // Do NOT reload on raw event-count growth: the streaming demuxer's count
+                // climbs every poll, and reparsing the whole track every 1.5s froze the
+                // libass worker 0.5-1.5s each time. `dry` gates that on actually needing it.
+                if (trk && trk.events > 0 && !loading && (idx !== curIdx || !attached || forceReload || dry || drift)) {
+                    load(idx, trk.events, ph);   // commits (and clears forceReload) only on success
                 }
-                setTimeout(poll, attached ? 1500 : 600);
+                // Poll fast while a seek's reload is still outstanding — the demuxer may
+                // need a second or two to reach the seek target's bytes.
+                setTimeout(poll, (attached && !forceReload) ? 1500 : 600);
             }).catch(function () { setTimeout(poll, 1500); });
         })();
     }

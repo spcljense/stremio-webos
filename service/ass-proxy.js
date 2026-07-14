@@ -10,17 +10,28 @@ function fetchRange(u, range, cb, n) {
     var opt = urlmod.parse(u);
     opt.headers = { 'User-Agent': 'Mozilla/5.0', 'Accept': '*/*' };
     if (range) opt.headers.Range = range;
-    var rq;
+    var rq, done = false;
+    function once(err, r, fu) { if (done) return; done = true; cb(err, r, fu); }   // an error after the response must not re-enter cb
     try {
         rq = lib.get(opt, function (r) {
             if (r.statusCode >= 300 && r.statusCode < 400 && r.headers.location && n > 0) {
-                r.resume(); return fetchRange(urlmod.resolve(u, r.headers.location), range, cb, n - 1);
+                r.resume(); done = true; return fetchRange(urlmod.resolve(u, r.headers.location), range, cb, n - 1);
             }
-            cb(null, r, u); // u = final (post-redirect) URL
+            // Headers are in, so the connect timeout has done its job — DISARM the
+            // socket-inactivity timer. The tee deliberately PAUSES this stream while the
+            // player's buffer is full (ass-tee.js backpressure), so a quiet socket is
+            // idle BY DESIGN, not stuck. Leaving the timer armed destroys a perfectly
+            // healthy stream after 30s (guaranteed on any pause) -> the player's response
+            // is truncated mid-body -> it reconnects with a Range -> a fresh demuxer
+            // resyncs to the next cluster and every subtitle event in between is lost
+            // for good. That is a silent, unrecoverable hole in the subtitles.
+            try { rq.setTimeout(0); } catch (e) {}
+            try { if (r.socket) r.socket.setTimeout(0); } catch (e) {}
+            once(null, r, u); // u = final (post-redirect) URL
         });
-    } catch (e) { return cb(e); }
-    rq.on('error', function (e) { cb(e); });
-    rq.setTimeout(30000, function () { rq.destroy(new Error('proxy timeout')); });
+    } catch (e) { return once(e); }
+    rq.on('error', function (e) { once(e); });
+    rq.setTimeout(30000, function () { rq.destroy(new Error('proxy timeout')); });   // connect/headers only
 }
 
 // Request handler bound to a { key -> mediaUrl } map (mutated in place to pin CDN).

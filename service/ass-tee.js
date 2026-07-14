@@ -21,6 +21,14 @@ var PORT = parseInt(process.env.ASS_TEE_PORT || '11474', 10);
 // evict finished episodes promptly. (Prefetch is off in tee mode, so we never need
 // many at once.)
 var SESSION_TTL = 6 * 60 * 1000, MAX_SESSIONS = 3;
+// Bounded tee read-ahead. Pausing on the FIRST res.write()===false clamps the CDN read
+// to within ~16KB (res's highWaterMark) of the player's socket, which pins the DEMUX
+// FRONTIER to the player's media buffer — the demuxer then knows subtitles barely
+// further ahead than the playhead, and the renderer starves. Let res's writable queue
+// grow to CAP instead, resuming at CAP/2: memory stays bounded (it was UNBOUNDED — the
+// whole multi-GB file — which is what OOM'd at ~1GB), while the demuxer keeps a real
+// head start over the player.
+var READAHEAD_CAP = parseInt(process.env.ASS_TEE_READAHEAD || '16777216', 10);   // 16MB
 var sessions = {};
 
 function keyFor(u) { return crypto.createHash('sha1').update(String(u)).digest('hex').slice(0, 16); }
@@ -206,6 +214,17 @@ var tee = http.createServer(function (req, res) {
         ['content-length', 'content-range', 'accept-ranges', 'content-type'].forEach(function (k) { if (up.headers[k]) h[k] = up.headers[k]; });
         try { res.writeHead(up.statusCode, h); } catch (e) { closeConn(); try { up.destroy(); } catch (x) {} return; }
         var off = start;
+        var pending = 0, paused = false;
+        // BACKPRESSURE, bounded (critical, and delicate — read before changing):
+        //  * No pause at all  -> the whole multi-GB file lands in res's writable queue
+        //                        in RAM -> ~1GB RSS -> OOM at stream start.
+        //  * Pause on the first write()===false -> the CDN read is clamped to res's 16KB
+        //                        highWaterMark, so the demuxer only ever parses as far
+        //                        ahead as the player has buffered. The subtitle renderer
+        //                        then runs dry and subs vanish mid-episode.
+        // So: allow up to READAHEAD_CAP bytes in flight, resume at half (hysteresis, to
+        // avoid pause/resume churn every 16KB). Memory bounded; demuxer keeps a lead.
+        function wrote(n) { return function () { pending -= n; if (paused && pending <= (READAHEAD_CAP >> 1)) { paused = false; try { up.resume(); } catch (e) {} } }; }
         up.on('data', function (c) {
             if (demux) { try { demux.pushAt(off, c); } catch (e) {} }
             else if (pre) {                                                            // still buffering (not closed)
@@ -213,15 +232,14 @@ var tee = http.createServer(function (req, res) {
                 else { makeDemux(); try { demux.pushAt(off, c); } catch (e) {} }        // overflow: proceed best-effort
             }
             off += c.length;
-            // BACKPRESSURE (critical): the player fills its ~30s media buffer then stops
-            // reading. Without pausing the CDN read, the WHOLE multi-GB file streams into
-            // res's writable queue in RAM -> the service balloons to ~1GB and OOM-crashes
-            // at stream start. Pause the upstream when res is full; resume it on 'drain'.
-            try { if (res.write(c) === false) up.pause(); } catch (e) {}
+            try {
+                pending += c.length;
+                res.write(c, wrote(c.length));
+                if (pending > READAHEAD_CAP && !paused) { paused = true; up.pause(); }
+            } catch (e) {}
         });
         up.on('end', function () { sess.lastActivity = Date.now(); try { res.end(); } catch (e) {} });
         up.on('error', function () { try { res.end(); } catch (e) {} });
-        res.on('drain', function () { try { up.resume(); } catch (e) {} });
         res.on('close', function () { closeConn(); try { up.destroy(); } catch (e) {} });
     });
 });
