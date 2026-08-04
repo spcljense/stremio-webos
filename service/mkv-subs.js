@@ -12,6 +12,7 @@
 // we reconstruct the "Dialogue:" line ffmpeg's ass muxer would produce.
 
 var zlib = require('zlib');
+var SA = require('./srt-ass.js');
 
 var IDS = {
     SEGMENT: 0x18538067, SEEKHEAD: 0x114d9b74, INFO: 0x1549a966, TIMESTAMPSCALE: 0x2ad7b1,
@@ -64,20 +65,24 @@ function MkvSubDemux(cb) {
     this.buf = Buffer.alloc(0);
     this.tsScale = 1e6;          // ns per tick (default 1ms)
     this.tracks = [];            // {number, type, codec, codecPrivate, lang, name}
-    this.subTrack = null;        // chosen ASS track number
+    this.subTrack = null;        // chosen supported text-subtitle track number
     this.codecPrivate = null;
     this.headerEmitted = false;
     this.clusterTs = 0;          // current cluster base timestamp (ticks)
     this.pendingTracks = null;   // TrackEntry being assembled
     this.clusterOffsets = [];    // absolute byte offset of each Cluster seen (parseAll)
-    this.subTracks = {};         // ALL ASS subtitle track numbers -> {name,lang,codecPrivate}
+    this.subTracks = {};         // ALL supported text-subtitle track numbers -> metadata
     this.allSubs = false;        // true -> emit events for every subtitle track (multi-track/selection)
 }
-// Pick the English "full" ASS track (mirrors parseProbe heuristic).
+// Pick the English "full" text track. ASS/SSA keeps its authored styles;
+// S_TEXT/UTF8 gets the same neutral ASS wrapper used for external SRT files.
 MkvSubDemux.prototype._chooseTrack = function () {
-    var subs = this.tracks.filter(function (t) { return t.type === 0x11 && /ASS|SSA/i.test(t.codec || ''); });
+    var subs = this.tracks.filter(function (t) { return t.type === 0x11 && /S_TEXT\/(ASS|SSA|UTF8)/i.test(t.codec || ''); });
     var st = this.subTracks;                                   // index EVERY sub track (for selection)
-    subs.forEach(function (t) { if (t.number != null && !st[t.number]) st[t.number] = { name: t.name || '', lang: t.lang || '', codecPrivate: t.codecPrivate }; });
+    subs.forEach(function (t) {
+        if (/S_TEXT\/UTF8/i.test(t.codec || '') && !t.codecPrivate) t.codecPrivate = Buffer.from(SA.assHeader(), 'utf8');
+        if (t.number != null && !st[t.number]) st[t.number] = { name: t.name || '', lang: t.lang || '', codec: t.codec || '', codecPrivate: t.codecPrivate };
+    });
     if (this.subTrack != null) return;   // externally seeded (mid-file demuxer) — keep the default
     // Anime often has many sub tracks with null language but descriptive names
     // ("Full Subtitles", "Signs/Songs", "French"...), so match on name too.
@@ -169,13 +174,22 @@ MkvSubDemux.prototype._block = function (data, durTicks) {
     if (payload.length > 2 && payload[0] === 0x78 && (payload[1] === 0x01 || payload[1] === 0x9c || payload[1] === 0xda)) {
         try { payload = zlib.inflateSync(payload); } catch (e) { return; }   // corrupt/partial -> skip
     }
-    // A valid S_TEXT/ASS block payload starts with "ReadOrder," (an integer). If a
-    // false cluster match or a wrong track number slips a garbage block through,
-    // the payload is binary — reject it so we never emit corrupt "Dialogue:" lines.
-    if (!/^\d{1,10},/.test(payload.slice(0, 12).toString('latin1'))) return;
     var startS = (this.clusterTs + rel) * this.tsScale / 1e9;
     var endS = startS + (durTicks || 0) * this.tsScale / 1e9;
-    if (this.cb.onEvent) this.cb.onEvent(reconstruct(payload, startS, endS), this._curCluster, tn.value);
+    var track = this.subTracks[tn.value] || {};
+    var line;
+    if (/S_TEXT\/UTF8/i.test(track.codec || '')) {
+        var text = SA.textToAss(payload.toString('utf8'));
+        if (!text) return;
+        if (endS <= startS) endS = startS + 0.06;
+        line = 'Dialogue: 0,' + fmtTs(startS) + ',' + fmtTs(endS) + ',Default,,0,0,0,,' + text;
+    } else {
+        // A valid S_TEXT/ASS block starts with "ReadOrder,". Reject binary data
+        // from a false cluster/track match instead of emitting corrupt dialogue.
+        if (!/^\d{1,10},/.test(payload.slice(0, 12).toString('latin1'))) return;
+        line = reconstruct(payload, startS, endS);
+    }
+    if (this.cb.onEvent) this.cb.onEvent(line, this._curCluster, tn.value);
 };
 
 // ---- streaming feed (bytes arrive in the player's request order) ------------

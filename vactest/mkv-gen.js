@@ -93,6 +93,10 @@ function genEvents(durSec, seed) {
 function build(opts) {
     var durSec = opts.durSec, BPS = Math.floor(opts.bitrateBps / 8);
     var events = opts.events || genEvents(durSec, opts.seed);
+    var subtitleCodec = opts.subtitleCodec || 'S_TEXT/ASS';
+    var subtitleTrack = [elU(ID.TRACKNUMBER, 2), elU(ID.TRACKTYPE, 0x11), elS(ID.CODECID, subtitleCodec),
+        elS(ID.NAME, 'Full Subtitles'), elS(ID.LANGUAGE, 'eng')];
+    if (/ASS|SSA/i.test(subtitleCodec)) subtitleTrack.push(elS(ID.CODECPRIVATE, ASS_HEADER));
 
     var headerParts = [
         master(ID.EBML, [elU(0x4286, 1), elU(0x42f7, 1), elU(0x42f2, 4), elU(0x42f3, 8), elS(0x4282, 'matroska'), elU(0x4287, 4), elU(0x4285, 2)]),
@@ -100,8 +104,7 @@ function build(opts) {
         master(ID.INFO, [elU(ID.TIMESTAMPSCALE, 1000000)]),
         master(ID.TRACKS, [
             master(ID.TRACKENTRY, [elU(ID.TRACKNUMBER, 1), elU(ID.TRACKTYPE, 1), elS(ID.CODECID, 'V_MPEG4/ISO/AVC'), elU(ID.DEFAULTDURATION, 41708333)]),
-            master(ID.TRACKENTRY, [elU(ID.TRACKNUMBER, 2), elU(ID.TRACKTYPE, 0x11), elS(ID.CODECID, 'S_TEXT/ASS'),
-                elS(ID.NAME, 'Full Subtitles'), elS(ID.LANGUAGE, 'eng'), elS(ID.CODECPRIVATE, ASS_HEADER)]),
+            master(ID.TRACKENTRY, subtitleTrack),
         ]),
     ];
     if (opts.headerPaddingBytes > 0) headerParts.push(el(ID.VOID, Buffer.alloc(opts.headerPaddingBytes)));
@@ -125,7 +128,7 @@ function build(opts) {
             var e = b.e;
             var rel = Math.round((e.start - c) * 1000);            // ms, relative to cluster ts
             var dur = Math.max(1, Math.round((e.end - e.start) * 1000));
-            var payload = Buffer.from(b.ro + ',0,' + e.style + ',,0,0,0,,' + e.text, 'utf8');
+            var payload = Buffer.from(/UTF8/i.test(subtitleCodec) ? e.text : b.ro + ',0,' + e.style + ',,0,0,0,,' + e.text, 'utf8');
             var blk = Buffer.concat([vint(2), Buffer.from([(rel >> 8) & 0xff, rel & 0xff, 0x00]), payload]);
             kids.push(master(ID.BLOCKGROUP, [el(ID.BLOCK, blk), elU(ID.BLOCKDURATION, dur)]));
         });
