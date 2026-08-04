@@ -44,11 +44,23 @@ function Session(cdnUrl) {
     this.ready = false;            // header/track-list bootstrapped (subTracks seeded)
     this.bootstrapDone = false;    // bootstrap finished (ready OR failed) — unblocks feeding
     this._doneCbs = [];            // callbacks waiting on bootstrapDone
+    this.pinDone = false;          // resolver redirect followed and pinned (or failed once)
+    this._pinCbs = [];             // player requests wait here instead of racing /resolve
     this.liveConns = 0;            // open tee connections (never evict while >0)
     this.videoFps = null;          // exact fps from the container (video DefaultDuration)
     this.lastActivity = Date.now();
     this._bootstrap();
 }
+Session.prototype._finishPin = function () {
+    if (this.pinDone) return;
+    this.pinDone = true;
+    var cbs = this._pinCbs; this._pinCbs = [];
+    for (var i = 0; i < cbs.length; i++) { try { cbs[i](); } catch (e) {} }
+};
+Session.prototype.whenPinned = function (cb) {
+    if (this.pinDone) { cb(); return; }
+    this._pinCbs.push(cb);
+};
 Session.prototype._finishBootstrap = function () {
     if (this.bootstrapDone) return;
     this.bootstrapDone = true;
@@ -81,8 +93,9 @@ Session.prototype._bootstrap = function () {
     hd.allSubs = true;
     var off = 0;
     PX.fetchRange(self.pinned, 'bytes=0-16777215', function (err, up, finalUrl) {
-        if (err || !up) { self._finishBootstrap(); return; }
+        if (err || !up) { self._finishPin(); self._finishBootstrap(); return; }
         if (finalUrl && finalUrl !== self.pinned && /^https?:/.test(finalUrl) && finalUrl.indexOf('/resolve/') < 0) self.pinned = finalUrl;
+        self._finishPin();
         up.on('data', function (c) {
             try { hd.pushAt(off, c); } catch (e) {}
             off += c.length;
@@ -207,7 +220,7 @@ var tee = http.createServer(function (req, res) {
     sess.liveConns++;
     var closed = false;
     function closeConn() { if (!closed) { closed = true; sess.liveConns = Math.max(0, sess.liveConns - 1); sess.lastActivity = Date.now(); pre = null; preLen = 0; } }   // release the pre-bootstrap buffer (up to 16MB)
-    PX.fetchRange(sess.pinned, range, function (err, up, finalUrl) {
+    sess.whenPinned(function () { PX.fetchRange(sess.pinned, range, function (err, up, finalUrl) {
         if (err || !up) { closeConn(); try { res.writeHead(502); res.end(); } catch (e) {} return; }
         if (finalUrl && finalUrl !== sess.pinned && /^https?:/.test(finalUrl) && finalUrl.indexOf('/resolve/') < 0) sess.pinned = finalUrl;
         var h = {};
@@ -241,7 +254,7 @@ var tee = http.createServer(function (req, res) {
         up.on('end', function () { sess.lastActivity = Date.now(); try { res.end(); } catch (e) {} });
         up.on('error', function () { try { res.end(); } catch (e) {} });
         res.on('close', function () { closeConn(); try { up.destroy(); } catch (e) {} });
-    });
+    }); });
 });
 tee.on('clientError', function (e, sock) { try { sock.destroy(); } catch (x) {} });
 try { tee.listen(PORT, '127.0.0.1'); } catch (e) {}
