@@ -29,6 +29,9 @@ var SESSION_TTL = 6 * 60 * 1000, MAX_SESSIONS = 3;
 // whole multi-GB file — which is what OOM'd at ~1GB), while the demuxer keeps a real
 // head start over the player.
 var READAHEAD_CAP = parseInt(process.env.ASS_TEE_READAHEAD || '16777216', 10);   // 16MB
+var BOOTSTRAP_MAX_ATTEMPTS = parseInt(process.env.ASS_TEE_BOOTSTRAP_ATTEMPTS || '3', 10);
+var BOOTSTRAP_RETRY_MS = parseInt(process.env.ASS_TEE_BOOTSTRAP_RETRY_MS || '250', 10);
+var BOOTSTRAP_COOLDOWN_MS = parseInt(process.env.ASS_TEE_BOOTSTRAP_COOLDOWN_MS || '2000', 10);
 var sessions = {};
 
 function keyFor(u) { return crypto.createHash('sha1').update(String(u)).digest('hex').slice(0, 16); }
@@ -44,12 +47,17 @@ function Session(cdnUrl) {
     this.ready = false;            // header/track-list bootstrapped (subTracks seeded)
     this.bootstrapDone = false;    // bootstrap finished (ready OR failed) — unblocks feeding
     this._doneCbs = [];            // callbacks waiting on bootstrapDone
+    this._readyCbs = [];           // active range demuxers waiting for eventual recovery
+    this.bootstrapRunning = false;
+    this.bootstrapAttempts = 0;
+    this.nextBootstrapAt = 0;
+    this._bootstrapTimer = null;
     this.pinDone = false;          // resolver redirect followed and pinned (or failed once)
     this._pinCbs = [];             // player requests wait here instead of racing /resolve
     this.liveConns = 0;            // open tee connections (never evict while >0)
     this.videoFps = null;          // exact fps from the container (video DefaultDuration)
     this.lastActivity = Date.now();
-    this._bootstrap();
+    this.ensureBootstrap();
 }
 Session.prototype._finishPin = function () {
     if (this.pinDone) return;
@@ -70,6 +78,45 @@ Session.prototype._finishBootstrap = function () {
 Session.prototype.whenBootstrapDone = function (cb) {
     if (this.bootstrapDone) { cb(); return; }
     this._doneCbs.push(cb);
+};
+Session.prototype._finishReady = function () {
+    var cbs = this._readyCbs; this._readyCbs = [];
+    for (var i = 0; i < cbs.length; i++) { try { cbs[i](); } catch (e) {} }
+};
+Session.prototype.whenReady = function (cb) {
+    if (this.ready) { cb(); return function () {}; }
+    this._readyCbs.push(cb);
+    var self = this;
+    return function () {
+        var i = self._readyCbs.indexOf(cb);
+        if (i >= 0) self._readyCbs.splice(i, 1);
+    };
+};
+Session.prototype.ensureBootstrap = function () {
+    if (this.ready || this.bootstrapRunning || Date.now() < this.nextBootstrapAt) return;
+    this.bootstrapRunning = true;
+    this.bootstrapAttempts++;
+    this._bootstrap();
+};
+Session.prototype._bootstrapFailed = function () {
+    var self = this;
+    if (self.ready) return;
+    self.bootstrapRunning = false;
+    if (self.bootstrapAttempts < BOOTSTRAP_MAX_ATTEMPTS) {
+        var delay = BOOTSTRAP_RETRY_MS * self.bootstrapAttempts;
+        self.nextBootstrapAt = Date.now() + delay;
+        clearTimeout(self._bootstrapTimer);
+        self._bootstrapTimer = setTimeout(function () {
+            self._bootstrapTimer = null;
+            self.ensureBootstrap();
+        }, delay);
+        return;
+    }
+    // Do not poison the cached session forever. Unblock playback after this
+    // bounded burst, then let the controller's status polling start a new burst.
+    self.bootstrapAttempts = 0;
+    self.nextBootstrapAt = Date.now() + BOOTSTRAP_COOLDOWN_MS;
+    self._finishBootstrap();
 };
 Session.prototype._bucket = function (tn) { return this.byTrack[tn] || (this.byTrack[tn] = { events: [], seen: Object.create(null) }); };
 Session.prototype._sink = function () {
@@ -92,27 +139,38 @@ Session.prototype._bootstrap = function () {
     var hd = new M.MkvSubDemux(self._sink());
     hd.allSubs = true;
     var off = 0;
+    var settled = false;
+    function failed() {
+        if (settled) return;
+        settled = true;
+        self._bootstrapFailed();
+    }
     PX.fetchRange(self.pinned, 'bytes=0-16777215', function (err, up, finalUrl) {
-        if (err || !up) { self._finishPin(); self._finishBootstrap(); return; }
+        if (err || !up) { self._finishPin(); failed(); return; }
         if (finalUrl && finalUrl !== self.pinned && /^https?:/.test(finalUrl) && finalUrl.indexOf('/resolve/') < 0) self.pinned = finalUrl;
         self._finishPin();
         up.on('data', function (c) {
             try { hd.pushAt(off, c); } catch (e) {}
             off += c.length;
             if (hd._curCluster && !self.ready) {         // header+fonts done -> capture tracks
+                settled = true;
                 self.subTrackSet = hd.subTracks;
                 self.tracks = Object.keys(hd.subTracks).map(function (n) { return { number: +n, name: hd.subTracks[n].name, lang: hd.subTracks[n].lang, codecPrivate: hd.subTracks[n].codecPrivate }; }).sort(function (a, b) { return a.number - b.number; });
                 self.videoFps = hd.videoFps();               // exact container fps for sign frame-lock
                 self.ready = true;
+                self.bootstrapRunning = false;
+                self.bootstrapAttempts = 0;
+                self.nextBootstrapAt = 0;
                 self._finishBootstrap();                     // unblock the mid-file demuxers (now seedable)
+                self._finishReady();                         // seed demuxers created after an earlier failed burst
                 try { up.destroy(); } catch (e) {}
             }
         });
-        // Head exhausted / upstream error before a Cluster: still unblock waiters
-        // (a start-at-0 stream can self-seed from its own header; a mid-file one
-        // just can't get subs for this session, but it must not hang forever).
-        up.on('end', function () { self._finishBootstrap(); });
-        up.on('error', function () { self._finishBootstrap(); });
+        // Head exhausted / upstream error before a Cluster: retry instead of
+        // preserving a permanently trackless session. The bounded retry burst
+        // eventually unblocks playback; later status polls can recover it.
+        up.on('end', failed);
+        up.on('error', failed);
     });
 };
 // Per-connection demuxer (concurrent-safe), demuxing all sub tracks. Seeded from
@@ -206,7 +264,7 @@ var tee = http.createServer(function (req, res) {
     // and its events are lost until a later seek re-fetches with a ready session.
     // So: buffer a mid-file stream's bytes (bounded) until bootstrapDone, then make
     // the (now-seedable) demuxer and flush.
-    var demux = null, pre = [], preLen = 0;
+    var demux = null, pre = [], preLen = 0, closed = false;
     function makeDemux() {
         if (demux) return;
         demux = sess.newDemux();
@@ -217,9 +275,13 @@ var tee = http.createServer(function (req, res) {
         if (!demux) makeDemux();
         else if (sess.ready) { demux.subTracks = sess.subTrackSet; }   // seed a demuxer forced early by pre-buffer overflow
     });
+    var cancelReady = sess.whenReady(function () {
+        if (closed) return;
+        if (!demux) makeDemux();
+        demux.subTracks = sess.subTrackSet;
+    });
     sess.liveConns++;
-    var closed = false;
-    function closeConn() { if (!closed) { closed = true; sess.liveConns = Math.max(0, sess.liveConns - 1); sess.lastActivity = Date.now(); pre = null; preLen = 0; } }   // release the pre-bootstrap buffer (up to 16MB)
+    function closeConn() { if (!closed) { closed = true; cancelReady(); sess.liveConns = Math.max(0, sess.liveConns - 1); sess.lastActivity = Date.now(); pre = null; preLen = 0; } }   // release the pre-bootstrap buffer (up to 16MB)
     sess.whenPinned(function () { PX.fetchRange(sess.pinned, range, function (err, up, finalUrl) {
         if (err || !up) { closeConn(); try { res.writeHead(502); res.end(); } catch (e) {} return; }
         if (finalUrl && finalUrl !== sess.pinned && /^https?:/.test(finalUrl) && finalUrl.indexOf('/resolve/') < 0) sess.pinned = finalUrl;
@@ -264,6 +326,7 @@ function status(cdnUrl) {
     var s = sessions[keyFor(cdnUrl)];
     if (!s) return { state: 'none', ready: false, tracks: [] };
     s.lastActivity = Date.now();   // the client poll is a heartbeat — keep the session alive
+    s.ensureBootstrap();           // failed bursts cool down, then recover instead of staying poisoned
     var fp = s.fontPlan();
     return { state: s.ready ? 'streaming' : 'probing', ready: s.ready, tracks: s.list(), fonts: Object.keys(s.fonts), fontAvail: fp.avail, fontEager: fp.eager, videoFps: s.videoFps };
 }
