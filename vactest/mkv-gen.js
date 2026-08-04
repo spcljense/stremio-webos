@@ -39,7 +39,7 @@ var ID = {
     EBML: 0x1a45dfa3, SEGMENT: 0x18538067, INFO: 0x1549a966, TIMESTAMPSCALE: 0x2ad7b1,
     TRACKS: 0x1654ae6b, TRACKENTRY: 0xae, TRACKNUMBER: 0xd7, TRACKTYPE: 0x83, CODECID: 0x86,
     CODECPRIVATE: 0x63a2, LANGUAGE: 0x22b59c, NAME: 0x536e, DEFAULTDURATION: 0x23e383,
-    CLUSTER: 0x1f43b675, TIMESTAMP: 0xe7, SIMPLEBLOCK: 0xa3, BLOCKGROUP: 0xa0, BLOCK: 0xa1, BLOCKDURATION: 0x9b,
+    VOID: 0xec, CLUSTER: 0x1f43b675, TIMESTAMP: 0xe7, SIMPLEBLOCK: 0xa3, BLOCKGROUP: 0xa0, BLOCK: 0xa1, BLOCKDURATION: 0x9b,
 };
 
 var ASS_HEADER = [
@@ -94,7 +94,7 @@ function build(opts) {
     var durSec = opts.durSec, BPS = Math.floor(opts.bitrateBps / 8);
     var events = opts.events || genEvents(durSec, opts.seed);
 
-    var header = Buffer.concat([
+    var headerParts = [
         master(ID.EBML, [elU(0x4286, 1), elU(0x42f7, 1), elU(0x42f2, 4), elU(0x42f3, 8), elS(0x4282, 'matroska'), elU(0x4287, 4), elU(0x4285, 2)]),
         idBuf(ID.SEGMENT), UNKNOWN_SIZE,
         master(ID.INFO, [elU(ID.TIMESTAMPSCALE, 1000000)]),
@@ -103,7 +103,9 @@ function build(opts) {
             master(ID.TRACKENTRY, [elU(ID.TRACKNUMBER, 2), elU(ID.TRACKTYPE, 0x11), elS(ID.CODECID, 'S_TEXT/ASS'),
                 elS(ID.NAME, 'Full Subtitles'), elS(ID.LANGUAGE, 'eng'), elS(ID.CODECPRIVATE, ASS_HEADER)]),
         ]),
-    ]);
+    ];
+    if (opts.headerPaddingBytes > 0) headerParts.push(el(ID.VOID, Buffer.alloc(opts.headerPaddingBytes)));
+    var header = Buffer.concat(headerParts);
 
     // pre-bucket events into the cluster (== second) that contains their start
     var buckets = {};

@@ -29,6 +29,11 @@ var SESSION_TTL = 6 * 60 * 1000, MAX_SESSIONS = 3;
 // whole multi-GB file — which is what OOM'd at ~1GB), while the demuxer keeps a real
 // head start over the player.
 var READAHEAD_CAP = parseInt(process.env.ASS_TEE_READAHEAD || '16777216', 10);   // 16MB
+// Anime releases can carry tens of MiB of embedded fonts before their first
+// Cluster. Request a generous bounded head window, consume it incrementally, and
+// destroy the response as soon as the Cluster arrives. This does NOT download the
+// full window for normal files; it removes the old 16 MiB correctness assumption.
+var BOOTSTRAP_MAX_BYTES = parseInt(process.env.ASS_TEE_BOOTSTRAP_MAX_BYTES || '134217728', 10); // 128 MiB
 var BOOTSTRAP_MAX_ATTEMPTS = parseInt(process.env.ASS_TEE_BOOTSTRAP_ATTEMPTS || '3', 10);
 var BOOTSTRAP_RETRY_MS = parseInt(process.env.ASS_TEE_BOOTSTRAP_RETRY_MS || '250', 10);
 var BOOTSTRAP_COOLDOWN_MS = parseInt(process.env.ASS_TEE_BOOTSTRAP_COOLDOWN_MS || '2000', 10);
@@ -50,6 +55,7 @@ function Session(cdnUrl) {
     this._readyCbs = [];           // active range demuxers waiting for eventual recovery
     this.bootstrapRunning = false;
     this.bootstrapAttempts = 0;
+    this.bootstrapLimitReached = false;
     this.nextBootstrapAt = 0;
     this._bootstrapTimer = null;
     this.pinDone = false;          // resolver redirect followed and pinned (or failed once)
@@ -93,7 +99,7 @@ Session.prototype.whenReady = function (cb) {
     };
 };
 Session.prototype.ensureBootstrap = function () {
-    if (this.ready || this.bootstrapRunning || Date.now() < this.nextBootstrapAt) return;
+    if (this.ready || this.bootstrapRunning || this.bootstrapLimitReached || Date.now() < this.nextBootstrapAt) return;
     this.bootstrapRunning = true;
     this.bootstrapAttempts++;
     this._bootstrap();
@@ -145,11 +151,14 @@ Session.prototype._bootstrap = function () {
         settled = true;
         self._bootstrapFailed();
     }
-    PX.fetchRange(self.pinned, 'bytes=0-16777215', function (err, up, finalUrl) {
+    PX.fetchRange(self.pinned, 'bytes=0-' + (BOOTSTRAP_MAX_BYTES - 1), function (err, up, finalUrl) {
         if (err || !up) { self._finishPin(); failed(); return; }
         if (finalUrl && finalUrl !== self.pinned && /^https?:/.test(finalUrl) && finalUrl.indexOf('/resolve/') < 0) self.pinned = finalUrl;
         self._finishPin();
         up.on('data', function (c) {
+            var remaining = BOOTSTRAP_MAX_BYTES - off;
+            if (remaining <= 0) return;
+            if (c.length > remaining) c = c.slice(0, remaining);
             try { hd.pushAt(off, c); } catch (e) {}
             off += c.length;
             if (hd._curCluster && !self.ready) {         // header+fonts done -> capture tracks
@@ -163,6 +172,15 @@ Session.prototype._bootstrap = function () {
                 self.nextBootstrapAt = 0;
                 self._finishBootstrap();                     // unblock the mid-file demuxers (now seedable)
                 self._finishReady();                         // seed demuxers created after an earlier failed burst
+                try { up.destroy(); } catch (e) {}
+            } else if (off >= BOOTSTRAP_MAX_BYTES) {
+                // A malformed/pathological file must not make status polling
+                // redownload the same maximum-size prefix forever.
+                settled = true;
+                self.bootstrapRunning = false;
+                self.bootstrapAttempts = 0;
+                self.bootstrapLimitReached = true;
+                self._finishBootstrap();
                 try { up.destroy(); } catch (e) {}
             }
         });
