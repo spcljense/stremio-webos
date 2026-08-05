@@ -530,8 +530,8 @@
         }
         (function poll() {
             if (ctl !== cur) { try { ctl.video && ctl.video.removeEventListener('seeked', onSeek); } catch (e) {} return; }
-            var idx = selIdx();
-            if (idx < 0) {
+            var requestedIdx = selIdx();
+            if (requestedIdx < 0) {
                 // No EMBEDDED track selected. It may be an EXTERNAL ('extra') addon
                 // subtitle (OpenSubtitles/Kitsu) — those are SRT, sometimes with inline
                 // {\an8} sign tags the webOS overlay prints literally. We render them via
@@ -563,6 +563,8 @@
             if (extKey) { extKey = null; attached = false; curIdx = -1; lastCount = -1; loadedUntil = -1e9; winCenter = -1e9; try { ctl.detach(); } catch (e) {} }
             fetch('/ass/track?u=' + uq).then(function (r) { return r.json(); }).then(function (s) {
                 if (ctl !== cur) return;
+                var idx = window.AssTrackMap ? window.AssTrackMap.resolve(window.__assSel, s.tracks || []) : selIdx();
+                if (idx < 0) { setTimeout(poll, 700); return; }
                 if (DEMAND && s.fontEager) {                 // on-demand: eager list + name->url map
                     fonts = s.fontEager;
                     avail = {}; var _fa = s.fontAvail || {};

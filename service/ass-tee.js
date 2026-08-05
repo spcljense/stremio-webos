@@ -44,7 +44,7 @@ function keyFor(u) { return crypto.createHash('sha1').update(String(u)).digest('
 function Session(cdnUrl) {
     this.cdnUrl = cdnUrl;
     this.pinned = cdnUrl;
-    this.tracks = [];              // subtitle tracks [{number,name,lang,codecPrivate}] sorted by number == EMBEDDED_ order
+    this.tracks = [];              // subtitle tracks in container/ffprobe order == EMBEDDED_ order
     this.subTrackSet = {};         // number -> info (seeds per-request demuxers)
     this.byTrack = {};             // number -> { events:[], seen:{} }
     this.fonts = {};               // name -> Buffer
@@ -60,6 +60,8 @@ function Session(cdnUrl) {
     this._bootstrapTimer = null;
     this.pinDone = false;          // resolver redirect followed and pinned (or failed once)
     this._pinCbs = [];             // player requests wait here instead of racing /resolve
+    this.refreshRunning = false;   // expired temporary CDN URL is refreshed single-flight
+    this._refreshCbs = [];
     this.liveConns = 0;            // open tee connections (never evict while >0)
     this.videoFps = null;          // exact fps from the container (video DefaultDuration)
     this.lastActivity = Date.now();
@@ -74,6 +76,45 @@ Session.prototype._finishPin = function () {
 Session.prototype.whenPinned = function (cb) {
     if (this.pinDone) { cb(); return; }
     this._pinCbs.push(cb);
+};
+Session.prototype._finishRefresh = function () {
+    this.refreshRunning = false;
+    var cbs = this._refreshCbs; this._refreshCbs = [];
+    for (var i = 0; i < cbs.length; i++) { try { cbs[i](); } catch (e) {} }
+};
+// TorBox's redirect target is temporary, while cdnUrl (/resolve/...) is stable.
+// If the pinned target expires, exactly one request goes back through the
+// resolver. Concurrent player ranges wait for that refresh, then use the new
+// target instead of stampeding the resolver.
+Session.prototype.fetchPlayerRange = function (range, cb, afterRefresh) {
+    var self = this;
+    if (self.refreshRunning && !afterRefresh) {
+        self._refreshCbs.push(function () { self.fetchPlayerRange(range, cb, true); });
+        return;
+    }
+    var attempted = self.pinned;
+    PX.fetchRange(attempted, range, function (err, up, finalUrl) {
+        var stalePin = attempted !== self.cdnUrl;
+        var failed = err || !up || up.statusCode >= 400;
+        if (failed && stalePin && !afterRefresh) {
+            try { if (up) { up.resume(); up.destroy(); } } catch (e) {}
+            if (self.refreshRunning) {
+                self._refreshCbs.push(function () { self.fetchPlayerRange(range, cb, true); });
+                return;
+            }
+            self.refreshRunning = true;
+            PX.fetchRange(self.cdnUrl, range, function (refreshErr, refreshUp, refreshUrl) {
+                if (!refreshErr && refreshUp && refreshUp.statusCode < 400 && refreshUrl && /^https?:/.test(refreshUrl) && refreshUrl.indexOf('/resolve/') < 0)
+                    self.pinned = refreshUrl;
+                self._finishRefresh();
+                cb(refreshErr, refreshUp, refreshUrl);
+            });
+            return;
+        }
+        if (!failed && finalUrl && finalUrl !== self.pinned && /^https?:/.test(finalUrl) && finalUrl.indexOf('/resolve/') < 0)
+            self.pinned = finalUrl;
+        cb(err, up, finalUrl);
+    });
 };
 Session.prototype._finishBootstrap = function () {
     if (this.bootstrapDone) return;
@@ -164,7 +205,7 @@ Session.prototype._bootstrap = function () {
             if (hd._curCluster && !self.ready) {         // header+fonts done -> capture tracks
                 settled = true;
                 self.subTrackSet = hd.subTracks;
-                self.tracks = Object.keys(hd.subTracks).map(function (n) { return { number: +n, name: hd.subTracks[n].name, lang: hd.subTracks[n].lang, codecPrivate: hd.subTracks[n].codecPrivate }; }).sort(function (a, b) { return a.number - b.number; });
+                self.tracks = Object.keys(hd.subTracks).map(function (n) { return { number: +n, streamIndex: hd.subTracks[n].streamIndex, name: hd.subTracks[n].name, lang: hd.subTracks[n].lang, codecPrivate: hd.subTracks[n].codecPrivate }; }).sort(function (a, b) { return a.streamIndex - b.streamIndex || a.number - b.number; });
                 self.videoFps = hd.videoFps();               // exact container fps for sign frame-lock
                 self.ready = true;
                 self.bootstrapRunning = false;
@@ -202,7 +243,7 @@ Session.prototype.newDemux = function () {
 };
 Session.prototype.list = function () {
     var self = this;
-    return this.tracks.map(function (t, i) { var b = self.byTrack[t.number]; return { index: i, number: t.number, name: t.name, lang: t.lang, events: b ? b.events.length : 0 }; });
+    return this.tracks.map(function (t, i) { var b = self.byTrack[t.number]; return { index: i, number: t.number, streamIndex: t.streamIndex, name: t.name, lang: t.lang, events: b ? b.events.length : 0 }; });
 };
 // ASS timecode "H:MM:SS.cc" -> seconds.
 function tcSec(s) { var m = /(\d+):(\d\d):(\d\d)[.,](\d+)/.exec(s); return m ? (+m[1]) * 3600 + (+m[2]) * 60 + (+m[3]) + (+('0.' + m[4])) : 0; }
@@ -300,9 +341,8 @@ var tee = http.createServer(function (req, res) {
     });
     sess.liveConns++;
     function closeConn() { if (!closed) { closed = true; cancelReady(); sess.liveConns = Math.max(0, sess.liveConns - 1); sess.lastActivity = Date.now(); pre = null; preLen = 0; } }   // release the pre-bootstrap buffer (up to 16MB)
-    sess.whenPinned(function () { PX.fetchRange(sess.pinned, range, function (err, up, finalUrl) {
+    sess.whenPinned(function () { sess.fetchPlayerRange(range, function (err, up, finalUrl) {
         if (err || !up) { closeConn(); try { res.writeHead(502); res.end(); } catch (e) {} return; }
-        if (finalUrl && finalUrl !== sess.pinned && /^https?:/.test(finalUrl) && finalUrl.indexOf('/resolve/') < 0) sess.pinned = finalUrl;
         var h = {};
         ['content-length', 'content-range', 'accept-ranges', 'content-type'].forEach(function (k) { if (up.headers[k]) h[k] = up.headers[k]; });
         try { res.writeHead(up.statusCode, h); } catch (e) { closeConn(); try { up.destroy(); } catch (x) {} return; }

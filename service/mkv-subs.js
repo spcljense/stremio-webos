@@ -81,7 +81,7 @@ MkvSubDemux.prototype._chooseTrack = function () {
     var st = this.subTracks;                                   // index EVERY sub track (for selection)
     subs.forEach(function (t) {
         if (/S_TEXT\/UTF8/i.test(t.codec || '') && !t.codecPrivate) t.codecPrivate = Buffer.from(SA.assHeader(), 'utf8');
-        if (t.number != null && !st[t.number]) st[t.number] = { name: t.name || '', lang: t.lang || '', codec: t.codec || '', codecPrivate: t.codecPrivate };
+        if (t.number != null && !st[t.number]) st[t.number] = { name: t.name || '', lang: t.lang || '', codec: t.codec || '', codecPrivate: t.codecPrivate, streamIndex: t.streamIndex };
     });
     if (this.subTrack != null) return;   // externally seeded (mid-file demuxer) — keep the default
     // Anime often has many sub tracks with null language but descriptive names
@@ -126,7 +126,7 @@ MkvSubDemux.prototype._openMaster = function (id) {
     if (id === IDS.ATTACHEDFILE) this._pendFont = { name: null, mime: null, data: null };
 };
 MkvSubDemux.prototype._closeMaster = function (id) {
-    if (id === IDS.TRACKENTRY && this.pendingTracks) { this.tracks.push(this.pendingTracks); this.pendingTracks = null; this._chooseTrack(); this._emitHeaderIfReady(); }
+    if (id === IDS.TRACKENTRY && this.pendingTracks) { this.pendingTracks.streamIndex = this.tracks.length; this.tracks.push(this.pendingTracks); this.pendingTracks = null; this._chooseTrack(); this._emitHeaderIfReady(); }
     if (id === IDS.ATTACHEDFILE && this._pendFont) { if (this.cb.onFont && this._pendFont.data) this.cb.onFont(this._pendFont); this._pendFont = null; }
 };
 MkvSubDemux.prototype._leaf = function (id, buf, ds, de) {

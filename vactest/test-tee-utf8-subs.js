@@ -59,6 +59,7 @@ cdn.listen(0, '127.0.0.1', function () {
                     try {
                         var ass = tee.trackText(source, 0);
                         assert.equal(status.tracks[0].name, 'Full Subtitles');
+                        assert.equal(status.tracks[0].streamIndex, 1, 'tee must expose the all-stream index for native ID translation');
                         assert.match(ass, /Style: Default,Liberation Sans/);
                         assert.match(ass, /Dialogue: 0,0:00:01\.25,0:00:03\.75,Default/);
                         assert.match(ass, /\{\\i1\}English dialogue\{\\i0\}\\Nsecond line/);
