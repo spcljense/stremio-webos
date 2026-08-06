@@ -126,13 +126,23 @@
         this._bound = {};
         this._hud = null;
     }
+    AssController.prototype._destroyJassub = function () {
+        if (!this.jassub) return;
+        var layer = this.jassub._canvasParent;
+        try { this.jassub.destroy(); } catch (e) {}
+        // JASSUB removes its layer through video.parentNode. React may have
+        // detached the video first during a binge rollover, leaving that lookup
+        // null while the sibling canvas is still connected.
+        try { if (layer) layer.remove(); } catch (e) {}
+        this.jassub = null;
+    };
     AssController.prototype.attach = function (subContent, fonts, availableFonts) {
         var v = this.video, self = this;
         if (typeof window.JASSUB !== 'function') { alog('JASSUB ctor missing'); return; }
         // Transactional ownership: never overwrite a live JASSUB — tear the old worker
         // down first or its ~60MB WASM heap leaks (notably across binge episode
         // boundaries where this controller is reused without a route change).
-        if (this.jassub) { try { this.jassub.destroy(); } catch (e) {} this.jassub = null; }
+        this._destroyJassub();
         // Suppress the app's native subtitle rendering (webOS surfaces the embedded
         // ASS track tag-stripped). We render it ourselves via libass.
         try { for (var ti = 0; ti < v.textTracks.length; ti++) v.textTracks[ti].mode = 'disabled'; } catch (e) {}
@@ -372,7 +382,7 @@
             v.removeEventListener('seeking', b.seekStart); v.removeEventListener('stalled', b.freeze);
             v.removeEventListener('ratechange', b.rate); document.removeEventListener('visibilitychange', b.freeze);
         } catch (e) {}
-        if (this.jassub) { try { this.jassub.destroy(); } catch (e) {} this.jassub = null; }
+        this._destroyJassub();
         if (this._hud) { this._hud.remove(); this._hud = null; }
     };
 
@@ -775,7 +785,18 @@
     var started = false;
     setInterval(function () {
         var h = playerHash();
-        if (h) { if (!started) started = begin(); }
+        if (h) {
+            var video = document.querySelector('video');
+            // React replaces the media element during a binge rollover while the
+            // route remains a player route. A controller bound to that detached
+            // element keeps __assActive=true, but its JASSUB canvas has left the DOM.
+            // Treat media-element identity as the lifecycle boundary, not the route.
+            if (cur && (cur.video !== video || !cur.video.isConnected)) {
+                stop();
+                started = false;
+            }
+            if (!started) started = begin();
+        }
         else { if (started || cur) { stop(); started = false; } }
     }, 700);
     window.__assCtlLoaded = true;
