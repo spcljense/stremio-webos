@@ -58,8 +58,7 @@
             B.styleTagTransform = J(), B.setAttributes = y(), B.insert = v().bind(null, "head"), B.domAPI = m(), B.insertStyleElement = N();
             u()(w.A, B);
             const Y = w.A && w.A.locals ? w.A.locals : void 0;
-            var z = (0, r.vs)("<div><div>"),
-                C = (0, r.vs)("<div>");
+            var z = (0, r.vs)("<div><div>");
             const k = "library",
                 A = () => {
                     const {
@@ -72,7 +71,9 @@
                         pages: m
                     } = (0, d.Pj)(), [p, v] = (0, l.n5)((null !== (f = h().type) && void 0 !== f ? f : u().sort) && null !== (y = null === (L = m.getCache(k)) || void 0 === L ? void 0 : L.item) && void 0 !== y ? y : 0);
                     var f, y, L;
-                    const [N, x] = (0, l.n5)(null), [J, w, B] = (0, c.zD)(), A = g(b), S = e => {
+                    const [rowIndex, setRowIndex] = (0, l.n5)(Math.floor((p() || 0) / 7)), [N, x] = (0, l.n5)(null), [J, w, B] = (0, c.zD)(), A = g(b), rowFocus = e => {
+                        setRowIndex(e)
+                    }, S = e => {
                         n(e)
                     }, R = (e, n) => {
                         (0, l.vA)((() => {
@@ -91,7 +92,7 @@
                         } = u();
                         b.load(e, n)
                     })), (0, c.k9)([h, u], (() => {
-                        v(null), v(0)
+                        v(null), v(0), setRowIndex(0)
                     })), (0, c.k9)(p, (e => {
                         e && m.setCache(k, {
                             item: e
@@ -166,41 +167,64 @@
                                         },
                                         open: J,
                                         onClose: B
-                                    }), (e = C(), (0, r.Yr)(e, (0, l.a0)(o.Gk, {
+                                    }), (0, l.a0)(s.OY, {
                                         get class() {
-                                            return Y.filters
+                                            return Y.content
                                         },
-                                        leave: ["left", "down"],
+                                        axis: "vertical",
                                         get children() {
-                                            return [(0, l.a0)(s.l6, {
-                                                get options() {
-                                                    return A.types()
+                                            return [(0, l.a0)(o.Gk, {
+                                                get class() {
+                                                    return Y.filters
                                                 },
-                                                onChange: S
-                                            }), (0, l.a0)(s.l6, {
-                                                get options() {
-                                                    return A.sorts()
+                                                leave: ["left", "down"],
+                                                get children() {
+                                                    return [(0, l.a0)(s.l6, {
+                                                        get options() {
+                                                            return A.types()
+                                                        },
+                                                        onChange: S
+                                                    }), (0, l.a0)(s.l6, {
+                                                        get options() {
+                                                            return A.sorts()
+                                                        },
+                                                        onChange: S
+                                                    })]
+                                                }
+                                            }), (0, l.a0)(l.jK, {
+                                                get each() {
+                                                    return Array.from({
+                                                        length: Math.ceil(b.catalog().length / 7)
+                                                    }, ((e, n) => n))
                                                 },
-                                                onChange: S
+                                                children: (e, n) => {
+                                                    const t = 7 * e();
+                                                    return (0, l.a0)(s.WC, {
+                                                        get catalog() {
+                                                            return {
+                                                                content: b.catalog().slice(t, t + 7)
+                                                            }
+                                                        },
+                                                        index: n,
+                                                        get itemIndex() {
+                                                            var e;
+                                                            const n = null !== (e = p()) && void 0 !== e ? e : 0;
+                                                            return n >= t && n < t + 7 ? n - t : 0
+                                                        },
+                                                        get autoFocus() {
+                                                            return rowIndex() === n
+                                                        },
+                                                        onFocus: rowFocus,
+                                                        onChange: (e, n) => {
+                                                            const r = t + n;
+                                                            R(e, r), r >= b.catalog().length - 10 && _()
+                                                        },
+                                                        onSelect: w
+                                                    })
+                                                }
                                             })]
                                         }
-                                    }), null), (0, r.Yr)(e, (0, l.a0)(s.WC, {
-                                        get catalog() {
-                                            return {
-                                                content: b.catalog()
-                                            }
-                                        },
-                                        index: 0,
-                                        get itemIndex() {
-                                            var e;
-                                            return null !== (e = p()) && void 0 !== e ? e : 0
-                                        },
-                                        autoFocus: !0,
-                                        onNextPage: _,
-                                        onChange: R,
-                                        onSelect: w
-                                    }), null), (0, l.gb)((() => (0, r.s7)(e, Y.content))), e)];
-                                    var e
+                                    })]
                                 }
                             })]
                         }
@@ -215,7 +239,7 @@
                 l = t.n(r),
                 i = t(3645),
                 a = t.n(i)()(l());
-            a.push([e.id, ".library-J0Lti .placeholder-zN3fb {\n  z-index: 1;\n  position: absolute;\n  height: 100%;\n  width: 100%;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n}\n.library-J0Lti .placeholder-zN3fb > * {\n  margin: 0.75rem 0 0.75rem 0;\n}\n.library-J0Lti .placeholder-zN3fb > :first-child {\n  margin-top: 0;\n}\n.library-J0Lti .placeholder-zN3fb > :last-child {\n  margin-bottom: 0;\n}\n.library-J0Lti .placeholder-zN3fb .image-uUIaS {\n  height: calc(18rem - 1.5rem);\n  width: calc(18rem - 1.5rem);\n}\n.library-J0Lti .placeholder-zN3fb .text-uY5su {\n  font-size: 1.75rem;\n  font-weight: 600;\n  color: hsla(0, 0%, 100%, 0.9);\n}\n.library-J0Lti .content-haNlB {\n  z-index: 1;\n  position: relative;\n  height: 100%;\n  display: flex;\n  flex-direction: column;\n  overflow: visible;\n}\n.library-J0Lti .content-haNlB > * {\n  margin: 1rem 0 1rem 0;\n}\n.library-J0Lti .content-haNlB > :first-child {\n  margin-top: 0;\n}\n.library-J0Lti .content-haNlB > :last-child {\n  margin-bottom: 0;\n}\n.library-J0Lti .content-haNlB .filters-R1HS3 {\n  z-index: 1;\n  display: flex;\n  flex-direction: row;\n  padding: 0 4rem;\n}\n.library-J0Lti .content-haNlB .filters-R1HS3 > * {\n  margin: 0 0.75rem 0 0.75rem;\n}\n.library-J0Lti .content-haNlB .filters-R1HS3 > :first-child {\n  margin-left: 0;\n}\n.library-J0Lti .content-haNlB .filters-R1HS3 > :last-child {\n  margin-right: 0;\n}\n", ""]), a.locals = {
+            a.push([e.id, ".library-J0Lti .placeholder-zN3fb {\n  z-index: 1;\n  position: absolute;\n  height: 100%;\n  width: 100%;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n}\n.library-J0Lti .placeholder-zN3fb > * {\n  margin: 0.75rem 0 0.75rem 0;\n}\n.library-J0Lti .placeholder-zN3fb > :first-child {\n  margin-top: 0;\n}\n.library-J0Lti .placeholder-zN3fb > :last-child {\n  margin-bottom: 0;\n}\n.library-J0Lti .placeholder-zN3fb .image-uUIaS {\n  height: calc(18rem - 1.5rem);\n  width: calc(18rem - 1.5rem);\n}\n.library-J0Lti .placeholder-zN3fb .text-uY5su {\n  font-size: 1.75rem;\n  font-weight: 600;\n  color: hsla(0, 0%, 100%, 0.9);\n}\n.library-J0Lti .content-haNlB {\n  z-index: 1;\n  position: relative;\n  height: 100%;\n  display: flex;\n  flex-direction: column;\n  overflow-x: hidden;\n  overflow-y: auto;\n  scrollbar-width: none;\n  -ms-overflow-style: none;\n  padding-bottom: 4rem;\n}\n.library-J0Lti .content-haNlB::-webkit-scrollbar {\n  display: none;\n}\n.library-J0Lti .content-haNlB > * {\n  margin: 1rem 0 1rem 0;\n}\n.library-J0Lti .content-haNlB > :first-child {\n  margin-top: 0;\n}\n.library-J0Lti .content-haNlB > :last-child {\n  margin-bottom: 0;\n}\n.library-J0Lti .content-haNlB .filters-R1HS3 {\n  z-index: 1;\n  display: flex;\n  flex-direction: row;\n  flex-shrink: 0;\n  padding: 0 4rem 2rem 4rem;\n}\n.library-J0Lti .content-haNlB .filters-R1HS3 > * {\n  margin: 0 0.75rem 0 0.75rem;\n}\n.library-J0Lti .content-haNlB .filters-R1HS3 > :first-child {\n  margin-left: 0;\n}\n.library-J0Lti .content-haNlB .filters-R1HS3 > :last-child {\n  margin-right: 0;\n}\n", ""]), a.locals = {
                 library: "library-J0Lti",
                 placeholder: "placeholder-zN3fb",
                 image: "image-uUIaS",
