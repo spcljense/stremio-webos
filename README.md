@@ -4,6 +4,8 @@ Standalone and optimized Stremio build for LG webOS TVs.
 
 This project is specifically maintained for webOS and includes faster startup, native media integration, preferred audio language selection, and the official Stremio streaming server.
 
+The Library is optimized for TV use with seven posters per row and reliable Up/Down remote navigation between rows.
+
 The official Stremio app may ignore the user's preferred audio language and simply select the first available audio track. This build reads the tracks exposed by the TV's native media pipeline and automatically selects the track matching your configured language.
 
 Built on Stremio Theater v1.9.2 and stripped of unnecessary non-webOS platform code for a cleaner and faster LG webOS experience.
