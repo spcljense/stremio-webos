@@ -54,3 +54,7 @@ ares-install --device tv io.strem.webos_VERSION_all.ipk
 io.strem.webos
 
 The custom application ID allows this build to coexist with the official Stremio app without package conflicts.
+    
+    **Feeling generous?, Enjoying the experience?, Every tip keeps the magic going!** ✨ 💸
+
+https://ko-fi.com/spcljense
