@@ -1,4 +1,5 @@
-# Stremio for webOS
+# Stremio for LG webOS TV's
+**Minimal requirement: LG (2020) and up**
 
 Standalone and optimized Stremio build for LG webOS TVs.
 
