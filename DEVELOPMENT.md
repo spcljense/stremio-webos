@@ -1,6 +1,6 @@
 # Stremio webOS
 
-Custom Stremio app for LG webOS TVs. Uses Stremio Theater v1.9.2 frontend (from [Vidaa project](https://github.com/NoobyGains/stremio-vidaa-tv)) with the official Stremio streaming server.
+Custom Stremio app for LG webOS TVs. Uses a locally maintained webOS-only Stremio Theater v1.9.2 frontend with the official Stremio streaming server.
 
 ## Important: Build artifacts
 

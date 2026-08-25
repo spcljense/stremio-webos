@@ -1,1 +1,1 @@
-{"id":"io.strem.tv.server","description":"Stremio Server","services":[{"name":"io.strem.tv.server"}]}
+{"id":"io.strem.webos.server","description":"Stremio Server","services":[{"name":"io.strem.webos.server"}]}

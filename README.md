@@ -4,7 +4,7 @@ Custom Stremio app for LG webOS TVs with working default audio language selectio
 
 The official Stremio app has a bug where it always plays the first audio track in the list, ignoring the user's preferred audio language setting. This build fixes that by reading tracks from the TV's native media pipeline and automatically selecting the track matching your configured language.
 
-Built from [Stremio Theater v1.9.2](https://github.com/NoobyGains/stremio-vidaa-tv) with the official Stremio streaming server.
+Standalone LG webOS-only build based on Stremio Theater v1.9.2 with the official Stremio streaming server.
 
 ## Prerequisites
 
@@ -54,5 +54,4 @@ Run this via SSH on the TV.
 ## Credits
 
 - [Stremio](https://www.stremio.com/)
-- [NoobyGains/stremio-vidaa-tv](https://github.com/NoobyGains/stremio-vidaa-tv) — Theater frontend
 - [webOS Homebrew Project](https://www.webosbrew.org/)

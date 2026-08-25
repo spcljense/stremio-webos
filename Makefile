@@ -1,8 +1,6 @@
 DEVICE ?= tv
-APP_ID = io.strem.tv
-SERVER_VERSION = 4.20.17
-VIDAA_REF = 208d437e5138adff0865443a2a88c4fcee84ece6
-VIDAA_REPO = https://github.com/NoobyGains/stremio-vidaa-tv/archive/$(VIDAA_REF).tar.gz
+APP_ID = io.strem.webos
+SERVER_VERSION = 4.20.19
 FFMPEG_VERSION = 7.0.2
 FFMPEG_URL = https://johnvansickle.com/ffmpeg/releases/ffmpeg-$(FFMPEG_VERSION)-arm64-static.tar.xz
 FFMPEG_SHA256 = f4149bb2b0784e30e99bdda85471c9b5930d3402014e934a5098b41d0f7201b1
@@ -26,18 +24,10 @@ service/bin/ffmpeg service/bin/ffprobe:
 	@rm -rf /tmp/stremio-ffmpeg
 
 build: service/server.js service/bin/ffmpeg service/bin/ffprobe
-	@echo "==> Downloading Vidaa frontend..."
-	@rm -rf /tmp/stremio-vidaa-build && mkdir -p /tmp/stremio-vidaa-build
-	@curl -sL $(VIDAA_REPO) | tar xz --strip-components=1 -C /tmp/stremio-vidaa-build
-	@echo "==> Building service/www/..."
-	@rm -rf service/www && mkdir -p service/www
-	@cp /tmp/stremio-vidaa-build/*.js /tmp/stremio-vidaa-build/*.wasm /tmp/stremio-vidaa-build/*.ttf /tmp/stremio-vidaa-build/*.png /tmp/stremio-vidaa-build/*.svg service/www/
-	@cp service/index.html service/www/index.html
-	@rm -rf /tmp/stremio-vidaa-build
-	@for p in patches/*.patch; do \
-		echo "    Applying $$(basename $$p)..."; \
-		patch -p0 -d service/www < "$$p"; \
-	done
+	@echo "==> Building webOS frontend..."
+	@test -d frontend-webos || (echo "ERROR: frontend-webos/ ontbreekt" && exit 1)
+	@rm -rf service/www
+	@cp -a frontend-webos service/www
 	@echo "==> Build complete"
 
 package: build
