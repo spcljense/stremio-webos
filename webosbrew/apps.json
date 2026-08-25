@@ -12,7 +12,7 @@
       "iconUri": "https://raw.githubusercontent.com/spcljense/stremio-webos/main/app/icon.png",
       "manifestUrl": "https://github.com/spcljense/stremio-webos/releases/latest/download/manifest.json",
       "pool": "main",
-      "shortDescription": "Optimized LG webOS-only Stremio build with seven posters per Library row, reliable Up/Down remote navigation, faster startup, reduced background/fanart loading, lazy poster loading, native media integration, preferred audio language support, Homebrew installation, and unnecessary non-webOS platform code removed."
+      "shortDescription": "Optimized LG (2020)+, webOS-only Stremio build with seven posters per Library row, reliable Up/Down remote navigation, faster startup, reduced background/fanart loading, lazy poster loading, native media integration, preferred audio language support, Homebrew installation, and unnecessary non-webOS platform code removed."
     }
   ]
 }
