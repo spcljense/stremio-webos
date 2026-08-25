@@ -7,12 +7,12 @@
   },
   "packages": [
     {
-      "id": "io.strem.tv",
+      "id": "io.strem.webos",
       "title": "Stremio",
-      "iconUri": "https://raw.githubusercontent.com/kieranbrown/stremio-webos/main/app/icon.png",
-      "manifestUrl": "https://github.com/kieranbrown/stremio-webos/releases/latest/download/manifest.json",
+      "iconUri": "https://raw.githubusercontent.com/spcljense/stremio-webos/main/app/icon.png",
+      "manifestUrl": "https://github.com/spcljense/stremio-webos/releases/latest/download/manifest.json",
       "pool": "main",
-      "shortDescription": "Stremio for webOS with working audio track selection."
+      "shortDescription": "Standalone optimized Stremio build for LG webOS TVs."
     }
   ]
 }

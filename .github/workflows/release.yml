@@ -2,7 +2,8 @@ name: Release
 
 on:
   push:
-    tags: ['v*']
+    tags:
+      - 'stremio-webos-*'
 
 permissions:
   contents: write
@@ -10,50 +11,65 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
       - name: Get version
         id: version
-        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+        run: echo "version=${GITHUB_REF_NAME#stremio-webos-}" >> "$GITHUB_OUTPUT"
 
-      - name: Set version in appinfo.json
-        run: jq --arg v "${{ steps.version.outputs.version }}" '.version = $v' app/appinfo.json > tmp.json && mv tmp.json app/appinfo.json
+      - name: Set package version
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
 
-      - name: Install ares-cli
-        run: npm i -g @webosose/ares-cli
+          jq --arg v "$VERSION" \
+            '.version = $v' \
+            app/appinfo.json > appinfo.tmp
 
-      - name: Build
-        run: make build
+          mv appinfo.tmp app/appinfo.json
 
-      - name: Package
+          jq --arg v "$VERSION" \
+            '.version = $v' \
+            service/package.json > package.tmp
+
+          mv package.tmp service/package.json
+
+      - name: Install webOS CLI
+        run: npm install -g @webosose/ares-cli
+
+      - name: Build package
         run: make package
 
-      - name: Generate manifest
+      - name: Generate Homebrew manifest
         run: |
-          IPK="io.strem.tv_${{ steps.version.outputs.version }}_all.ipk"
+          VERSION="${{ steps.version.outputs.version }}"
+          IPK="io.strem.webos_${VERSION}_all.ipk"
+
           SHA256=$(sha256sum "$IPK" | cut -d' ' -f1)
           SIZE=$(stat --format=%s "$IPK")
-          cat > manifest.json << EOF
+
+          cat > manifest.json << EOF2
           {
-            "id": "io.strem.tv",
-            "version": "${{ steps.version.outputs.version }}",
+            "id": "io.strem.webos",
+            "version": "${VERSION}",
             "type": "web",
             "title": "Stremio",
-            "iconUri": "https://raw.githubusercontent.com/${{ github.repository }}/main/app/icon.png",
-            "sourceUrl": "https://github.com/${{ github.repository }}",
+            "appDescription": "Standalone optimized Stremio build for LG webOS TVs.",
+            "iconUri": "https://raw.githubusercontent.com/spcljense/stremio-webos/main/app/icon.png",
+            "sourceUrl": "https://github.com/spcljense/stremio-webos",
             "rootRequired": false,
-            "ipkUrl": "$IPK",
+            "ipkUrl": "${IPK}",
             "ipkHash": {
-              "sha256": "$SHA256"
+              "sha256": "${SHA256}"
             },
-            "ipkSize": $SIZE
+            "ipkSize": ${SIZE}
           }
-          EOF
+          EOF2
 
-      - name: Create release
+      - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            io.strem.tv_${{ steps.version.outputs.version }}_all.ipk
+            io.strem.webos_${{ steps.version.outputs.version }}_all.ipk
             manifest.json
