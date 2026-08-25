@@ -1,57 +1,53 @@
 # Stremio for webOS
 
-Custom Stremio app for LG webOS TVs with working default audio language selection.
+Standalone and optimized Stremio build for LG webOS TVs.
 
-The official Stremio app has a bug where it always plays the first audio track in the list, ignoring the user's preferred audio language setting. This build fixes that by reading tracks from the TV's native media pipeline and automatically selecting the track matching your configured language.
+This project is specifically maintained for webOS and includes faster startup, native media integration, preferred audio language selection, and the official Stremio streaming server.
 
-Standalone LG webOS-only build based on Stremio Theater v1.9.2 with the official Stremio streaming server.
+The official Stremio app may ignore the user's preferred audio language and simply select the first available audio track. This build reads the tracks exposed by the TV's native media pipeline and automatically selects the track matching your configured language.
 
-## Prerequisites
+Built on Stremio Theater v1.9.2 and stripped of unnecessary non-webOS platform code for a cleaner and faster LG webOS experience.
 
-1. Install the [webOS ares CLI](https://www.npmjs.com/package/@webosose/ares-cli) — `npm i -g @webosose/ares-cli` (requires Node.js 20 for SSH compatibility)
-2. Either enable [Developer Mode](https://webostv.developer.lge.com/develop/getting-started/developer-mode-app) on your TV, or have [Homebrew Channel](https://github.com/webosbrew/webos-homebrew-channel) installed
-3. Configure your TV as a device — `ares-setup-device`
+# Installation
 
-> **Note:** Developer Mode expires after 1000 hours and any sideloaded apps will be uninstalled. Rooted TVs with Homebrew Channel do not have this limitation.
+# Homebrew Channel
 
-## Install via Homebrew Channel
+For rooted LG webOS TVs with [Homebrew Channel](https://github.com/webosbrew/webos-homebrew-channel):
 
-If your TV is rooted with [Homebrew Channel](https://github.com/webosbrew/webos-homebrew-channel):
+1. Open **Homebrew Channel** on your TV.
+2. Open **Settings**.
+3. Add the following repository: https://raw.githubusercontent.com/spcljense/stremio-webos/main/webosbrew/apps.json
+4. Return to the app list.
+5. Find Stremio and install it.
 
-1. Open Homebrew Channel on your TV
-2. Go to settings and add this repository: `https://raw.githubusercontent.com/kieranbrown/stremio-webos/main/webosbrew/apps.json`
-3. Find Stremio in the app list and install
+# Manual installation
 
-## Install manually
+You can also install the IPK manually using the webOS CLI.
 
-```sh
+# Requirements
+
+Node.js
+webOS ares CLI
+LG TV configured with Developer Mode or SSH/root access
+
+# Install the CLI
+
+npm install -g @webosose/ares-cli
+
+# Configure your TV
+
+ares-setup-device
+
+# Then clone and deploy
+
+git clone https://github.com/spcljense/stremio-webos.git
+cd stremio-webos
 make deploy
-```
 
-This downloads all dependencies, builds the app, packages the IPK, installs it on your TV, and launches it.
+# Or install a downloaded release directly
+ares-install --device tv io.strem.webos_VERSION_all.ipk
 
-Replace the default device name if needed: `make deploy DEVICE=myTV`
+# Application ID
+io.strem.webos
 
-### Other commands
-
-```sh
-make build     # Download dependencies + build (no install)
-make package   # Build + create IPK
-make restart   # Close + relaunch on TV
-make clean     # Remove build artifacts
-```
-
-## Auto-start on input select
-
-On rooted TVs, you can register Stremio as an input source so it appears in the TV's input list and can auto-launch:
-
-```sh
-luna-send-pub -n 1 'luna://com.webos.service.eim/addDevice' '{"appId":"io.strem.tv","pigImage":""}'
-```
-
-Run this via SSH on the TV.
-
-## Credits
-
-- [Stremio](https://www.stremio.com/)
-- [webOS Homebrew Project](https://www.webosbrew.org/)
+The custom application ID allows this build to coexist with the official Stremio app without package conflicts.
