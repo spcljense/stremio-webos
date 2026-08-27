@@ -1,0 +1,51 @@
+--- video.chunk.js
++++ video.chunk.js
+@@ -21248,7 +21248,13 @@
+                     };
+ 
+                 function F() {
+-                    P || null === D || (P = !0, o(D.url, (function(e) {
++                    if (P || null === D) return;
++                    P = !0;
++                    var __subAttempt = 0;
++                    (function __F() {
++                    if (null === D) return;
++                    o(D.url, (function(e) {
++                        if (null === D) return;
+                         var t = 0,
+                             r = 0;
+                         y = [], T = [], e && (M = e), ((M || {}).subs || []).length && (M.subs.forEach((function(e) {
+@@ -21263,7 +21269,7 @@
+                                     mode: r === p ? "showing" : "disabled"
+                                 })
+                             }
+-                        })), G("subtitlesTracks"), G("selectedSubtitlesTrackId")), ((M || {}).audio || []).length && (M.audio.forEach((function(e) {
++                        })), G("subtitlesTracks"), G("selectedSubtitlesTrackId")), ((M || {}).audio || []).length && !(A.audioTracks && A.audioTracks.length) && (M.audio.forEach((function(e) {
+                             if (!h.unsupportedAudio.includes(e.codec || "")) {
+                                 var t = r;
+                                 r++, v || T.length || (v = t), T.push({
+@@ -21275,8 +21281,22 @@
+                                     mode: t === v ? "showing" : "disabled"
+                                 })
+                             }
+-                        })), v = "EMBEDDED_0", G("audioTracks"), G("selectedAudioTrackId"))
+-                    })))
++                        })), v = "EMBEDDED_0", G("audioTracks"), G("selectedAudioTrackId"));
++                        // A COLD streaming-server probe returns [] until it has downloaded and
++                        // ffprobed enough of the file. This fetch used to be single-shot, so the
++                        // embedded subtitle list (its ONLY source on the native-decode path, where
++                        // subs never surface as HTML5 textTracks) stayed empty until a manual replay
++                        // warmed the server cache. Retry with backoff until the probe yields tracks.
++                        // Both subs AND audio empty == probe not done yet -> retry; audio present but
++                        // no subs == probe done, file genuinely has no subs -> stop. (The audio list
++                        // is owned by the native audioTracks addtrack handler when present; F() only
++                        // fills audio as a fallback, guarded above, so a late retry can't clobber it.)
++                        try { if (localStorage.getItem("assLog") === "1") console.log("[sublist] attempt " + __subAttempt + " subs=" + (((M || {}).subs || []).length) + " audio=" + (((M || {}).audio || []).length)); } catch (e) {}
++                        if (!((M || {}).subs || []).length && !((M || {}).audio || []).length && ++__subAttempt < 15) {
++                            setTimeout(__F, Math.min(800 + 400 * __subAttempt, 4000));
++                        }
++                    }))
++                    })();
+                 }
+ 
+                 function N(e) {
