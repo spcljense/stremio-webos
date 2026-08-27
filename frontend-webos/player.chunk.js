@@ -577,16 +577,16 @@
                         })
                     },
                     selectSubtitlesTrack: e => {
-                        v("selectedSubtitlesTrackId", "string" == typeof e ? e : e.id), v("selectedExtraSubtitlesTrackId", null)
+                        v("selectedSubtitlesTrackId", ((window.__assSel = ("string" == typeof e ? e : e.id)), window.__assActive = /^EMBEDDED_/.test(String(window.__assSel||"")), window.__assSel)), v("selectedExtraSubtitlesTrackId", null)
                     },
                     selectExtraSubtitlesTrack: e => {
-                        v("selectedExtraSubtitlesTrackId", "string" == typeof e ? e : e.id), v("selectedSubtitlesTrackId", null)
+                        v("selectedExtraSubtitlesTrackId", "string" == typeof e ? e : e.id), v("selectedSubtitlesTrackId", ((window.__assSel = (null)), window.__assActive = /^EMBEDDED_/.test(String(window.__assSel||"")), window.__assSel))
                     },
                     selectAudioTrack: e => {
                         v("selectedAudioTrackId", "string" == typeof e ? e : e.id)
                     },
                     disableSubtitlesTracks: () => {
-                        v("selectedSubtitlesTrackId", null), v("selectedExtraSubtitlesTrackId", null)
+                        v("selectedSubtitlesTrackId", ((window.__assSel = (null)), window.__assActive = /^EMBEDDED_/.test(String(window.__assSel||"")), window.__assSel)), v("selectedExtraSubtitlesTrackId", null)
                     },
                     setProp: v
                 }
@@ -662,7 +662,7 @@
                                     label: "NONE",
                                     selected: () => null === w() && null === T(),
                                     onClick: () => {
-                                        n.setProp("selectedSubtitlesTrackId", null), n.setProp("selectedExtraSubtitlesTrackId", null)
+                                        n.setProp("selectedSubtitlesTrackId", ((window.__assSel = (null)), window.__assActive = /^EMBEDDED_/.test(String(window.__assSel||"")), window.__assSel)), n.setProp("selectedExtraSubtitlesTrackId", null)
                                     }
                                 }, ...k([...y(v()).map((({
                                     id: e,
@@ -675,7 +675,7 @@
                                     tag: l,
                                     selected: () => e === w(),
                                     onClick: () => {
-                                        n.setProp("selectedSubtitlesTrackId", e), n.setProp("selectedExtraSubtitlesTrackId", null), t.updateStream({
+                                        n.setProp("selectedSubtitlesTrackId", ((window.__assSel = (e)), window.__assActive = /^EMBEDDED_/.test(String(window.__assSel||"")), window.__assSel)), n.setProp("selectedExtraSubtitlesTrackId", null), t.updateStream({
                                             subtitleTrack: {
                                                 id: e,
                                                 embedded: !0
@@ -693,7 +693,7 @@
                                     tag: l,
                                     selected: () => e === T(),
                                     onClick: () => {
-                                        n.setProp("selectedExtraSubtitlesTrackId", e), n.setProp("selectedSubtitlesTrackId", null), t.updateStream({
+                                        n.setProp("selectedExtraSubtitlesTrackId", e), n.setProp("selectedSubtitlesTrackId", ((window.__assSel = (null)), window.__assActive = /^EMBEDDED_/.test(String(window.__assSel||"")), window.__assSel)), t.updateStream({
                                             subtitleTrack: {
                                                 id: e,
                                                 embedded: !1
@@ -1137,7 +1137,7 @@
                     ctx: w,
                     player: T,
                     streamingServer: A
-                } = (0, p.gK)(), C = f(), [P, E, I] = (0, b.zD)(), [O, H, Y] = (0, b.zD)(), [N, R, L] = (0, b.zD)(), [D, U, M] = (0, b.zD)(), [V, $, _] = (0, b.zD)(), [j, G, B] = (0, b.zD)(), [J, K, q] = (0, b.zD)(), [W, ee, te] = (0, b.zD)(), [re, oe, le] = (0, b.zD)(), [ae, ie, ue] = (0, b.zD)(), [de, ce] = (0, o.n5)(!1), [be, me] = (0, o.n5)(!1), [fe, ve] = (0, o.n5)(!1), [he, ye] = (0, o.n5)(!1), [ke, Se] = (0, o.n5)(null), [xe, we, Te] = (0, b.zD)(!1), [Ae, Ce] = (0, o.n5)(!1), [Pe, Ee] = (0, o.n5)(!1), [Ie, Oe] = (0, o.n5)("intro"), {
+                } = (0, p.gK)(), C = f(), __subtitleSelection = window.SubtitleTransition.createSelectionLatch(), [P, E, I] = (0, b.zD)(), [O, H, Y] = (0, b.zD)(), [N, R, L] = (0, b.zD)(), [D, U, M] = (0, b.zD)(), [V, $, _] = (0, b.zD)(), [j, G, B] = (0, b.zD)(), [J, K, q] = (0, b.zD)(), [W, ee, te] = (0, b.zD)(), [re, oe, le] = (0, b.zD)(), [ae, ie, ue] = (0, b.zD)(), [de, ce] = (0, o.n5)(!1), [he, ye] = (0, o.n5)(!1), [ke, Se] = (0, o.n5)(null), [xe, we, Te] = (0, b.zD)(!1), [Ae, Ce] = (0, o.n5)(!1), [Pe, Ee] = (0, o.n5)(!1), [Ie, Oe] = (0, o.n5)("intro"), {
                     stream: He,
                     videoParams: Ye,
                     paused: Ne,
@@ -1204,7 +1204,7 @@
                     if (T.ended(), rt()) {
                         var e;
                         const t = null === (e = Be()) || void 0 === e ? void 0 : e.deepLinks;
-                        y.size() > 2 && await y.back(), y.navigate(null == t ? void 0 : t.metaDetailsStreams, !0), y.navigate(null == t ? void 0 : t.player)
+                        y.size() > 2 && await y.back(), y.navigate(null == t ? void 0 : t.metaDetailsStreams, !0), y.navigate((function(){var __p=null==t?void 0:t.player;try{if(window.__assBinge&&__p){var __m=(__p.match(/kitsu:\d+:\d+/)||[])[0];var __l=window.__assBinge.lockHash(__m);if(__l)return __l;}}catch(e){}return __p})())
                     } else y.back()
                 }, mt = () => {
                     const e = T.state().introOutro;
@@ -1286,23 +1286,28 @@
                         } = T.state(), l = (e, t) => e.find((({
                             lang: e
                         }) => b.eo.matches(e, t)));
-                        if (!be())
-                            if (fe()) {
+                        __subtitleSelection.load(He());
+                        if (__subtitleSelection.shouldApply()) {
+                            let i = !1;
+                            if (null != o && o.subtitleTrack) {
+                                const {
+                                    id: e,
+                                    embedded: t
+                                } = o.subtitleTrack, n = t && e ? e : null, r = !t && e ? e : null;
+                                n && $e().length ? (C.selectSubtitlesTrack(n), i = !0) : r && _e().length && (C.selectExtraSubtitlesTrack(r), i = !0)
+                            } else {
                                 if (e) {
                                     const t = l($e(), e),
                                         n = l(_e(), e);
-                                    t ? (C.selectSubtitlesTrack(t), me(!0)) : n && (C.selectExtraSubtitlesTrack(n), me(!0))
+                                    t ? (C.selectSubtitlesTrack(t), i = !0) : n && (C.selectExtraSubtitlesTrack(n), i = !0)
                                 }
-                            } else if (null != o && o.subtitleTrack) {
-                            const {
-                                id: e,
-                                embedded: t
-                            } = o.subtitleTrack, n = t && e ? e : null, r = !t && e ? e : null;
-                            n && $e().length ? (C.selectSubtitlesTrack(n), me(!0)) : r && _e().length && (C.selectExtraSubtitlesTrack(r), me(!0))
-                        } else if (t) {
-                            const e = l($e(), t),
-                                n = l(_e(), t);
-                            e ? (C.selectSubtitlesTrack(e), ve(!0)) : n && (C.selectExtraSubtitlesTrack(n), ve(!0))
+                                if (!i && t) {
+                                    const e = l($e(), t),
+                                        n = l(_e(), t);
+                                    e ? (C.selectSubtitlesTrack(e), i = !0) : n && (C.selectExtraSubtitlesTrack(n), i = !0)
+                                }
+                            }
+                            i && __subtitleSelection.markApplied()
                         }
                         if (!he())
                             if (null != o && o.audioTrack) {
