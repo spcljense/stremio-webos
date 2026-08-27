@@ -11383,8 +11383,8 @@
                             extra: []
                         }),
                         loadCatalogs: t => e.dispatchAction("LoadRange", {
-                            start: Math.max(0, t - 2),
-                            end: t + 2
+                            start: Math.max(0, t - 3),
+                            end: t + 3
                         })
                     }
                 },
