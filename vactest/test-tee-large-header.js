@@ -64,7 +64,9 @@ cdn.listen(0, '127.0.0.1', function () {
     }, function (res) {
         res.resume();
         res.on('end', function () {
-            var deadline = Date.now() + 1500;
+            // Allow slower WSL and shared CI runners enough time to process the
+            // synthetic 20+ MiB header without weakening the bootstrap checks.
+            var deadline = Date.now() + 5000;
             (function poll() {
                 var status = tee.status(source);
                 if (status.ready) {
