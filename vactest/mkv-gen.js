@@ -39,6 +39,7 @@ var ID = {
     EBML: 0x1a45dfa3, SEGMENT: 0x18538067, INFO: 0x1549a966, TIMESTAMPSCALE: 0x2ad7b1,
     TRACKS: 0x1654ae6b, TRACKENTRY: 0xae, TRACKNUMBER: 0xd7, TRACKTYPE: 0x83, CODECID: 0x86,
     CODECPRIVATE: 0x63a2, LANGUAGE: 0x22b59c, NAME: 0x536e, DEFAULTDURATION: 0x23e383,
+    ATTACHMENTS: 0x1941a469, ATTACHEDFILE: 0x61a7, FILENAME: 0x466e, FILEMIME: 0x4660, FILEDATA: 0x465c, FILEUID: 0x46ae,
     VOID: 0xec, CLUSTER: 0x1f43b675, TIMESTAMP: 0xe7, SIMPLEBLOCK: 0xa3, BLOCKGROUP: 0xa0, BLOCK: 0xa1, BLOCKDURATION: 0x9b,
 };
 
@@ -107,6 +108,16 @@ function build(opts) {
             master(ID.TRACKENTRY, subtitleTrack),
         ]),
     ];
+    if (opts.attachments && opts.attachments.length) {
+        headerParts.push(master(ID.ATTACHMENTS, opts.attachments.map(function (attachment, index) {
+            return master(ID.ATTACHEDFILE, [
+                elS(ID.FILENAME, attachment.name),
+                elS(ID.FILEMIME, attachment.mime || 'application/octet-stream'),
+                el(ID.FILEDATA, Buffer.from(attachment.data || '')),
+                elU(ID.FILEUID, index + 1),
+            ]);
+        })));
+    }
     if (opts.headerPaddingBytes > 0) headerParts.push(el(ID.VOID, Buffer.alloc(opts.headerPaddingBytes)));
     var header = Buffer.concat(headerParts);
 

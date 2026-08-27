@@ -1,0 +1,49 @@
+--- video.chunk.js
++++ video.chunk.js
+@@ -21242,20 +21242,22 @@
+                         muted: !1,
+                         playbackSpeed: !1
+                     },
++                    __probeSession = window.StreamProbeSession.create(),
+                     P = !1,
+                     M = {
+                         audio: [],
+                         subs: []
+                     };
+ 
+                 function F() {
+-                    if (P || null === D) return;
++                    var __probe = __probeSession.start(D && D.url);
++                    if (!__probe) return;
+                     P = !0;
+                     var __subAttempt = 0;
+                     (function __F() {
+-                    if (null === D) return;
+-                    o(D.url, (function(e) {
+-                        if (null === D) return;
++                    if (!__probeSession.isCurrent(__probe)) return;
++                    o(__probe.url, (function(e) {
++                        if (!__probeSession.isCurrent(__probe)) return;
+                         var t = 0,
+                             r = 0;
+                         y = [], T = [], e && (M = e), ((M || {}).subs || []).length && (M.subs.forEach((function(e) {
+@@ -21517,7 +21519,8 @@
+                     switch (e) {
+                         case "load":
+                             if (r && r.stream && "string" == typeof r.stream.url) {
+-                                D = r.stream, C = r.time, G("stream"), A.autoplay = "boolean" != typeof r.autoplay || r.autoplay, G("loaded"), G("paused"), G("time"), G("duration"), G("buffering"), G("buffered"), G("subtitlesTracks"), G("selectedSubtitlesTrackId"), G("audioTracks"), G("selectedAudioTrackId");
++                                D = r.stream, __probeSession.load(D.url), P = !1, M = { audio: [], subs: [] }, y = [], T = [],
++                                C = r.time, G("stream"), A.autoplay = "boolean" != typeof r.autoplay || r.autoplay, G("loaded"), G("paused"), G("time"), G("duration"), G("buffering"), G("buffered"), G("subtitlesTracks"), G("selectedSubtitlesTrackId"), G("audioTracks"), G("selectedAudioTrackId");
+                                 var n = 0;
+                                 A.src = (/^https?:\/\/(?!127\.0\.0\.1)/.test(D.url) ? "http://127.0.0.1:11474/s/" + encodeURIComponent(D.url) : D.url), i = function() {
+                                     try {
+@@ -21537,7 +21540,8 @@
+                             }));
+                             break;
+                         case "unload":
+-                            D = null, C = null, Array.from(A.textTracks).forEach((function(e) {
++                            __probeSession.unload(), P = !1, M = { audio: [], subs: [] }, y = [], T = [],
++                            D = null, C = null, Array.from(A.textTracks).forEach((function(e) {
+                                 e.oncuechange = null
+                             })), A.removeAttribute("src"), A.load(), G("stream"), G("paused"), G("time"), G("duration"), G("buffering"), G("buffered"), G("subtitlesTracks"), G("selectedSubtitlesTrackId"), G("audioTracks"), G("selectedAudioTrackId");
+                             break;

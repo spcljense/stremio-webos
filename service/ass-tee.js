@@ -171,7 +171,7 @@ Session.prototype._sink = function () {
     return {
         onFont: function (f) {
             if (!f.name || !f.data || self.fonts[f.name]) return;
-            if (/^image\//i.test(f.mime || '')) return;                       // cover art etc. — not a font, don't ship to libass
+            if (!FI.isFontAttachment(f.name, f.mime)) return;
             self.fonts[f.name] = f.data;
             self.fontNamesByFile[f.name] = FI.fontNames(f.data).names;         // for on-demand loading
         },

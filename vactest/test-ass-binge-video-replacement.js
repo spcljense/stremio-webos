@@ -70,4 +70,35 @@ assert.equal(oldCanvasRemoved, true, 'detached episode canvas is removed explici
 assert.notEqual(context.__assCtl, firstController, 'binge rollover creates a fresh controller');
 assert.equal(context.__assCtl.video, video, 'fresh controller owns episode 2 video');
 
+var secondController = context.__assCtl;
+var secondCanvasRemoved = false;
+secondController.jassub = {
+    _canvasParent: { remove: function () { secondCanvasRemoved = true; } },
+    destroy: function () {},
+};
+video.isConnected = false;
+video = makeVideo();
+context.location.hash = '#/player/episode-3';
+lifecycle();
+
+assert.equal(secondCanvasRemoved, true, 'second rollover removes the second episode canvas');
+assert.notEqual(context.__assCtl, secondController, 'every rollover gets a fresh controller');
+assert.equal(context.__assCtl.video, video, 'fresh controller owns episode 3 video');
+
+var thirdController = context.__assCtl;
+video = null; // React can briefly render no media element between episodes.
+lifecycle();
+assert.equal(context.__assCtl, null, 'temporary video absence releases the detached controller');
+
+video = makeVideo();
+video.readyState = 0;
+lifecycle();
+assert.equal(context.__assCtl, null, 'controller waits for the replacement video to become usable');
+
+video.readyState = 1;
+lifecycle();
+assert.ok(context.__assCtl, 'controller recovers once replacement metadata is available');
+assert.notEqual(context.__assCtl, thirdController, 'temporary absence cannot resurrect a stale controller');
+assert.equal(context.__assCtl.video, video, 'recovered controller owns the current video');
+
 console.log('PASSED subtitle controller follows binge video replacement');

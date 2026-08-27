@@ -7,7 +7,13 @@ FFMPEG_SHA256 = f4149bb2b0784e30e99bdda85471c9b5930d3402014e934a5098b41d0f7201b1
 VERSION = $(shell python3 -c "import json; print(json.load(open('app/appinfo.json'))['version'])")
 IPK = $(APP_ID)_$(VERSION)_all.ipk
 
-.PHONY: build package deploy launch restart clean
+.PHONY: test build package deploy launch restart clean
+
+test: build
+	@set -e; for t in vactest/test-*.js; do \
+		echo "==> $$t"; \
+		node "$$t"; \
+	done
 
 service/server.js:
 	@echo "==> Downloading Stremio server v$(SERVER_VERSION)..."

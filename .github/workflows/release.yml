@@ -35,6 +35,9 @@ jobs:
 
           mv package.tmp service/package.json
 
+      - name: Test subtitle pipeline
+        run: make test
+
       - name: Install webOS CLI
         run: npm install -g @webosose/ares-cli
 

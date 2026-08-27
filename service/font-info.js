@@ -56,4 +56,16 @@ function fontNames(buf) {
     } catch (e) { return { names: [] }; }
 }
 
-module.exports = { fontNames: fontNames };
+// RFC 9559 section 21.2: accept the registered and established legacy font
+// media types. Old Matroska files may use application/octet-stream, but only
+// .ttf/.otf/.ttc are defined as safe extension-based guesses. Attachments can
+// otherwise be arbitrary cover art, transcripts, XML, or application data and
+// must not be handed to libass as fonts.
+function isFontAttachment(name, mime) {
+    var type = String(mime || '').trim().toLowerCase();
+    if (/^font\/(sfnt|ttf|otf|collection|woff|woff2)$/.test(type)) return true;
+    if (/^application\/(x-truetype-font|x-font-ttf|vnd\.ms-opentype|font-sfnt|font-woff)$/.test(type)) return true;
+    return (!type || type === 'application/octet-stream') && /\.(ttf|otf|ttc)$/i.test(String(name || ''));
+}
+
+module.exports = { fontNames: fontNames, isFontAttachment: isFontAttachment };

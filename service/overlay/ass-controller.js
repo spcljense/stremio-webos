@@ -110,6 +110,7 @@
     // ---- controller -----------------------------------------------------------
     function AssController(video) {
         this.video = video;
+        this.mediaUrl = null;
         this.clock = new MediaClock();
         this.jassub = null;
         this.raf = 0;
@@ -524,10 +525,11 @@
         function load(idx, count, ph) {
             var q = '/ass/tget?u=' + uq + '&trk=' + idx;
             if (WINDOW > 0 && ph != null) q += '&t=' + ph + '&w=' + WINDOW;
+            var requestedSelection = window.__assSel;
             loading = true; lastLoadAt = (window.performance && performance.now()) || Date.now();
             return fetch(q).then(function (r) { return r.ok ? r.text() : ''; }).then(function (ass) {
                 loading = false;
-                if (ctl !== cur || !ass || ass.length < 40) return;
+                if (ctl !== cur || window.__assSel !== requestedSelection || !ass || ass.length < 40) return;
                 var cover = coverOf(ass, ph == null ? 0 : ph);
                 if (cover < 0) { alog('tee: window empty at ph=' + ph + ' (demuxer behind) — not committing'); return; }
                 if (!attached) { var furls = fonts.map(function (n) { return '/ass/tfont?u=' + uq + '&f=' + encodeURIComponent(n); }); ctl.attach(ass, furls, avail); attached = true; subMsg('Subtitles ready', 1200); alog('tee attach trk=' + idx + ' len=' + ass.length + ' eager=' + furls.length + ' avail=' + (avail ? Object.keys(avail).length : 0)); }
@@ -705,7 +707,7 @@
             }
         };
     })();
-    function prefetchNext(mediaUrl) {
+    function prefetchNext(mediaUrl, extractAhead) {
         var m = /\/resolve\/[^\/]+\/([^\/]+)\/([0-9a-f]{40}|[0-9a-f]{32})\/([^\/]+)/.exec(mediaUrl);
         var epId = currentEpId();
         if (!m || !epId) { alog('prefetch: no infohash/epId'); return; }
@@ -723,7 +725,10 @@
                         var pick = streams.find(function (s) { return (s.url || '').indexOf(infohash) >= 0; })   // same pack
                             || (grp && streams.find(function (s) { return (((s.title || '') + (s.description || '')).indexOf('[' + grp + ']') >= 0); }));
                         if (pick && pick.url) {
-                            fetch('/ass/prepare?u=' + encodeURIComponent(pick.url)).catch(function () {});
+                            // Non-tee playback benefits from warming its separate extractor.
+                            // Tee playback demuxes the player's own bytes, so preparing here
+                            // would create the duplicate download the tee exists to avoid.
+                            if (extractAhead !== false) fetch('/ass/prepare?u=' + encodeURIComponent(pick.url)).catch(function () {});
                             // Remember the same-group stream so binge locks onto it.
                             if (window.__assBinge) {
                                 var _st = window.__assBinge.streams;
@@ -759,7 +764,8 @@
                 if (made !== cur) return;
                 var mi = findMediaUrl();
                 if (mi && mi.url) {
-                    if (mi.teed) { alog('tee mode: ' + mi.url.slice(0, 48)); attachViaTee(cur, mi.url); }
+                    made.mediaUrl = mi.url;
+                    if (mi.teed) { alog('tee mode: ' + mi.url.slice(0, 48)); attachViaTee(cur, mi.url); setTimeout(function () { if (made === cur) prefetchNext(mi.url, false); }, 30000); }
                     else { extractAndAttach(cur, mi.url); setTimeout(function () { if (made === cur) prefetchNext(mi.url); }, 30000); }
                 }
                 else if (n < 60) setTimeout(function () { waitMedia(n + 1); }, 500);
@@ -787,11 +793,12 @@
         var h = playerHash();
         if (h) {
             var video = document.querySelector('video');
+            var media = findMediaUrl();
             // React replaces the media element during a binge rollover while the
             // route remains a player route. A controller bound to that detached
             // element keeps __assActive=true, but its JASSUB canvas has left the DOM.
             // Treat media-element identity as the lifecycle boundary, not the route.
-            if (cur && (cur.video !== video || !cur.video.isConnected)) {
+            if (cur && (cur.video !== video || !cur.video.isConnected || (cur.mediaUrl && media && cur.mediaUrl !== media.url))) {
                 stop();
                 started = false;
             }
