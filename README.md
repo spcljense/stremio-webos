@@ -36,20 +36,6 @@ On the maintainer's LG CX, startup is more than ten seconds faster than the stan
 
 The official app can select the first available audio track instead of the language configured in the Stremio profile. This build reads the tracks exposed by the LG webOS native media pipeline and automatically selects the track matching the preferred audio language.
 
-### Enhanced anime subtitle support
-
-Styled subtitles are rendered through JASSUB while video playback remains in the LG webOS native media pipeline.
-
-- Full-fidelity ASS/SSA subtitle styling and positioning.
-- Embedded MKV subtitles and external subtitle files.
-- Embedded font extraction for more accurate typesetting.
-- Embedded UTF-8 subtitle support.
-- Improved subtitle discovery in MKV files with large headers.
-- Reliable subtitle selection when changing episodes or streams.
-- Recovery from delayed or incomplete subtitle metadata.
-- Protection against subtitles disappearing during playback.
-- Improved binge-play transitions and subtitle prefetching.
-
 ### Standalone application ID
 
 The app uses the ID `io.strem.webos`, allowing it to coexist with the official Stremio app without replacing it or conflicting with its package.
