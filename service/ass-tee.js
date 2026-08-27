@@ -213,10 +213,15 @@ var tee = http.createServer(function (req, res) {
                 else { makeDemux(); try { demux.pushAt(off, c); } catch (e) {} }        // overflow: proceed best-effort
             }
             off += c.length;
-            try { res.write(c); } catch (e) {}
+            // BACKPRESSURE (critical): the player fills its ~30s media buffer then stops
+            // reading. Without pausing the CDN read, the WHOLE multi-GB file streams into
+            // res's writable queue in RAM -> the service balloons to ~1GB and OOM-crashes
+            // at stream start. Pause the upstream when res is full; resume it on 'drain'.
+            try { if (res.write(c) === false) up.pause(); } catch (e) {}
         });
         up.on('end', function () { sess.lastActivity = Date.now(); try { res.end(); } catch (e) {} });
         up.on('error', function () { try { res.end(); } catch (e) {} });
+        res.on('drain', function () { try { up.resume(); } catch (e) {} });
         res.on('close', function () { closeConn(); try { up.destroy(); } catch (e) {} });
     });
 });

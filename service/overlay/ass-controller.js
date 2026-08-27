@@ -467,6 +467,7 @@
         var _wv = parseFloat(lsGet('assSubWindow', '60')); var WINDOW = isNaN(_wv) ? 60 : _wv;
         var winCenter = -1e9;
         var forceReload = false;   // set by seek; the poll consumes it once
+        var extKey = null, extGen = 0;   // EXTERNAL ('extra') sub: current selection id + async generation guard
         // On-demand fonts: OFF by default — Codex found it can drop an *unnamed* CJK
         // fallback attachment (-> tofu). Opt in with assFontDemand=1 once the lossless
         // path (cmap coverage / glyph-miss hook) lands. Eager = all fonts, never tofu.
@@ -497,10 +498,36 @@
         (function poll() {
             if (ctl !== cur) { try { ctl.video && ctl.video.removeEventListener('seeked', onSeek); } catch (e) {} return; }
             var idx = selIdx();
-            if (idx < 0) {   // off / external subtitle selected -> stop rendering ours
-                if (attached) { alog('tee: non-embedded selected -> detach'); ctl.detach(); attached = false; curIdx = -1; lastCount = -1; }
-                return setTimeout(poll, 800);
+            if (idx < 0) {
+                // No EMBEDDED track selected. It may be an EXTERNAL ('extra') addon
+                // subtitle (OpenSubtitles/Kitsu) — those are SRT, sometimes with inline
+                // {\an8} sign tags the webOS overlay prints literally. We render them via
+                // JASSUB instead: fetch once through /ext-sub (which converts SRT->ASS),
+                // and attach. The video.chunk patch suppresses the native HTML overlay.
+                var exId = window.__extraSubSel;
+                var exUrl = exId && window.__extraSubs && window.__extraSubs[exId] && window.__extraSubs[exId].url;
+                if (exUrl) {
+                    if (extKey !== exId) {                    // new external selection
+                        extKey = exId; var myGen = ++extGen;
+                        var _vw = (ctl.video && ctl.video.videoWidth) || 0, _vh = (ctl.video && ctl.video.videoHeight) || 0;
+                        fetch('/ext-sub?u=' + encodeURIComponent(exUrl) + (_vw ? '&rx=' + _vw + '&ry=' + _vh : ''))
+                            .then(function (r) { return r.ok ? r.text() : ''; })
+                            .then(function (ass) {
+                                if (ctl !== cur || myGen !== extGen || window.__extraSubSel !== exId) return;   // stale/superseded
+                                if (!ass || ass.length < 40) { alog('ext-sub empty ' + exId); return; }
+                                ctl.attach(ass, [], null); attached = true; curIdx = -1; lastCount = -1;
+                                alog('ext-sub attached ' + exId + ' len=' + ass.length);
+                            }).catch(function () { if (myGen === extGen) extKey = null; });   // allow retry
+                    }
+                } else if (attached || extKey) {              // nothing selected -> stop rendering ours
+                    alog('tee: none selected -> detach'); try { ctl.detach(); } catch (e) {}
+                    attached = false; curIdx = -1; lastCount = -1; extKey = null;
+                }
+                return setTimeout(poll, 700);
             }
+            // An EMBEDDED track is selected. If we were showing an EXTERNAL sub, drop it
+            // so the embedded path re-attaches JASSUB with the embedded font plan.
+            if (extKey) { extKey = null; attached = false; curIdx = -1; lastCount = -1; try { ctl.detach(); } catch (e) {} }
             fetch('/ass/track?u=' + uq).then(function (r) { return r.json(); }).then(function (s) {
                 if (ctl !== cur) return;
                 if (DEMAND && s.fontEager) {                 // on-demand: eager list + name->url map

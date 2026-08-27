@@ -1,0 +1,19 @@
+--- video.chunk.js
++++ video.chunk.js
+@@ -16344,6 +16344,16 @@
+                                 var n = v.find((function(e) {
+                                     return e.id === t
+                                 }));
++                                try {
++                                    // Route EXTERNAL subs through our JASSUB renderer instead of this
++                                    // HTML overlay: capture the url, mark the selection, and return
++                                    // BEFORE fetching/parsing/drawing (g stays null -> empty overlay).
++                                    // ass-controller.js renders it (converting SRT+{\an} tags to ASS).
++                                    if (n) { window.__extraSubs = window.__extraSubs || {}; window.__extraSubs[n.id] = { url: n.url || null, lang: n.lang, label: n.label }; window.__extraSubSel = n.id; y = n.id, T = 0; }
++                                    else { window.__extraSubSel = null; }
++                                    window.dispatchEvent(new Event("ass-selectionchange"));
++                                    return I(), D("selectedExtraSubtitlesTrackId"), D("extraSubtitlesDelay"), !0;
++                                } catch (__e) {}
+                                 if (n) {
+                                     y = n.id, T = 0,
+                                         function e(t, i) {
