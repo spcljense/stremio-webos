@@ -1,0 +1,11 @@
+--- video.chunk.js	2026-07-12 20:31:05
++++ video.chunk.js	2026-07-12 20:31:05
+@@ -21374,7 +21374,7 @@
+                                         parameters: {
+                                             type: "text",
+                                             mediaId: A.mediaId,
+-                                            index: r
++                                            index: (window.__assActive?-1:r)
+                                         }
+                                     }, e, e)
+                                 }), 500)

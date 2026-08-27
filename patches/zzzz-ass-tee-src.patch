@@ -1,0 +1,11 @@
+--- video.chunk.js	2026-07-13 12:00:00
++++ video.chunk.js	2026-07-13 12:00:00
+@@ -21500,7 +21500,7 @@
+                             if (r && r.stream && "string" == typeof r.stream.url) {
+                                 D = r.stream, C = r.time, G("stream"), A.autoplay = "boolean" != typeof r.autoplay || r.autoplay, G("loaded"), G("paused"), G("time"), G("duration"), G("buffering"), G("buffered"), G("subtitlesTracks"), G("selectedSubtitlesTrackId"), G("audioTracks"), G("selectedAudioTrackId");
+                                 var n = 0;
+-                                A.src = D.url, i = function() {
++                                A.src = (/^https?:\/\/(?!127\.0\.0\.1)/.test(D.url) ? "http://127.0.0.1:11474/s/" + encodeURIComponent(D.url) : D.url), i = function() {
+                                     try {
+                                         A.load()
+                                     } catch (e) {}

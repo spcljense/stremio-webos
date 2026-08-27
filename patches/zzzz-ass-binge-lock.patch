@@ -1,0 +1,11 @@
+--- player.chunk.js	2026-07-12 21:13:01
++++ player.chunk.js	2026-07-12 21:13:01
+@@ -1204,7 +1204,7 @@
+                     if (T.ended(), rt()) {
+                         var e;
+                         const t = null === (e = Be()) || void 0 === e ? void 0 : e.deepLinks;
+-                        y.size() > 2 && await y.back(), y.navigate(null == t ? void 0 : t.metaDetailsStreams, !0), y.navigate(null == t ? void 0 : t.player)
++                        y.size() > 2 && await y.back(), y.navigate(null == t ? void 0 : t.metaDetailsStreams, !0), y.navigate((function(){var __p=null==t?void 0:t.player;try{if(window.__assBinge&&__p){var __m=(__p.match(/kitsu:\d+:\d+/)||[])[0];var __l=window.__assBinge.lockHash(__m);if(__l)return __l;}}catch(e){}return __p})())
+                     } else y.back()
+                 }, mt = () => {
+                     const e = T.state().introOutro;

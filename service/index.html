@@ -16,6 +16,12 @@
     <script defer src="main.js"></script>
     <script defer src="service.js"></script>
     <script defer src="webOSTV.js"></script>
+    <!-- Full-fidelity ASS rendering (docs/ASS-SUBTITLE-RENDERING-PLAN.md).
+         Forked JASSUB 1.8.8 (externalClock/renderAt) + transition-anchored PLL
+         clock controller. P0 probe (/ass-probe.js) retired; re-add that tag to
+         re-run diagnostics. -->
+    <script defer src="/jassub/jassub-ekitabu.umd.js"></script>
+    <script defer src="/ass-controller.js"></script>
 </head>
 <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>

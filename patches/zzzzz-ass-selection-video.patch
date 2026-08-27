@@ -1,0 +1,43 @@
+--- video.chunk.js
++++ video.chunk.js
+@@ -21291,7 +21291,7 @@
+                         case "subtitlesTracks":
+                             return null === D ? [] : y;
+                         case "selectedSubtitlesTrackId":
+-                            return null === D || m ? null : p;
++                            return null === D ? null : p;
+                         case "subtitlesOffset":
+                             return w ? null : x;
+                         case "subtitlesSize":
+@@ -21345,7 +21345,7 @@
+                             break;
+                         case "selectedSubtitlesTrackId":
+                             if (A.mediaId && null !== D && 0 === (t || "").indexOf("EMBEDDED_")) {
+-                                E(!0), b.bg_opacity = "none" === b.bg_color ? 0 : 255, ["setSubtitleCharacterColor", "setSubtitleBackgroundColor", "setSubtitlePosition", "setSubtitleFontSize", "setSubtitleBackgroundOpacity", "setSubtitleCharacterOpacity"].forEach((function(e) {
++                                E(!1), b.bg_opacity = "none" === b.bg_color ? 0 : 255, ["setSubtitleCharacterColor", "setSubtitleBackgroundColor", "setSubtitlePosition", "setSubtitleFontSize", "setSubtitleBackgroundOpacity", "setSubtitleCharacterOpacity"].forEach((function(e) {
+                                     l({
+                                         method: e,
+                                         parameters: {
+@@ -21358,7 +21358,7 @@
+                                             charOpacity: b.char_opacity
+                                         }
+                                     })
+-                                })), console.log("WebOS", "change subtitles for id: ", A.mediaId, " index:", t), p = t;
++                                })), console.log("WebOS", "change subtitles for id: ", A.mediaId, " index:", t), p = t, window.__assSel = t, window.__assActive = !0;
+                                 var r = parseInt(t.replace("EMBEDDED_", ""));
+                                 console.log("set subs to track idx: " + r), setTimeout((function() {
+                                     var e = function() {
+@@ -21374,11 +21374,11 @@
+                                         parameters: {
+                                             type: "text",
+                                             mediaId: A.mediaId,
+-                                            index: (window.__assActive?-1:r)
++                                            index: -1
+                                         }
+                                     }, e, e)
+                                 }), 500)
+-                            } - 1 === (t || "").indexOf("EMBEDDED_") && (p = null, G("selectedSubtitlesTrackId"), E(!1));
++                            } - 1 === (t || "").indexOf("EMBEDDED_") && (p = null, window.__assSel = null, window.__assActive = !1, G("selectedSubtitlesTrackId"), E(!1));
+                             break;
+                         case "subtitlesOffset":
+                             if (null !== t && isFinite(t)) {

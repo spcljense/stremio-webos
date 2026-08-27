@@ -1,0 +1,49 @@
+--- player.chunk.js
++++ player.chunk.js
+@@ -577,16 +577,16 @@
+                         })
+                     },
+                     selectSubtitlesTrack: e => {
+-                        v("selectedSubtitlesTrackId", "string" == typeof e ? e : e.id), v("selectedExtraSubtitlesTrackId", null)
++                        v("selectedSubtitlesTrackId", ((window.__assSel = ("string" == typeof e ? e : e.id)), window.__assActive = /^EMBEDDED_/.test(String(window.__assSel||"")), window.__assSel)), v("selectedExtraSubtitlesTrackId", null)
+                     },
+                     selectExtraSubtitlesTrack: e => {
+-                        v("selectedExtraSubtitlesTrackId", "string" == typeof e ? e : e.id), v("selectedSubtitlesTrackId", null)
++                        v("selectedExtraSubtitlesTrackId", "string" == typeof e ? e : e.id), v("selectedSubtitlesTrackId", ((window.__assSel = (null)), window.__assActive = /^EMBEDDED_/.test(String(window.__assSel||"")), window.__assSel))
+                     },
+                     selectAudioTrack: e => {
+                         v("selectedAudioTrackId", "string" == typeof e ? e : e.id)
+                     },
+                     disableSubtitlesTracks: () => {
+-                        v("selectedSubtitlesTrackId", null), v("selectedExtraSubtitlesTrackId", null)
++                        v("selectedSubtitlesTrackId", ((window.__assSel = (null)), window.__assActive = /^EMBEDDED_/.test(String(window.__assSel||"")), window.__assSel)), v("selectedExtraSubtitlesTrackId", null)
+                     },
+                     setProp: v
+                 }
+@@ -662,7 +662,7 @@
+                                     label: "NONE",
+                                     selected: () => null === w() && null === T(),
+                                     onClick: () => {
+-                                        n.setProp("selectedSubtitlesTrackId", null), n.setProp("selectedExtraSubtitlesTrackId", null)
++                                        n.setProp("selectedSubtitlesTrackId", ((window.__assSel = (null)), window.__assActive = /^EMBEDDED_/.test(String(window.__assSel||"")), window.__assSel)), n.setProp("selectedExtraSubtitlesTrackId", null)
+                                     }
+                                 }, ...k([...y(v()).map((({
+                                     id: e,
+@@ -675,7 +675,7 @@
+                                     tag: l,
+                                     selected: () => e === w(),
+                                     onClick: () => {
+-                                        n.setProp("selectedSubtitlesTrackId", e), n.setProp("selectedExtraSubtitlesTrackId", null), t.updateStream({
++                                        n.setProp("selectedSubtitlesTrackId", ((window.__assSel = (e)), window.__assActive = /^EMBEDDED_/.test(String(window.__assSel||"")), window.__assSel)), n.setProp("selectedExtraSubtitlesTrackId", null), t.updateStream({
+                                             subtitleTrack: {
+                                                 id: e,
+                                                 embedded: !0
+@@ -693,7 +693,7 @@
+                                     tag: l,
+                                     selected: () => e === T(),
+                                     onClick: () => {
+-                                        n.setProp("selectedExtraSubtitlesTrackId", e), n.setProp("selectedSubtitlesTrackId", null), t.updateStream({
++                                        n.setProp("selectedExtraSubtitlesTrackId", e), n.setProp("selectedSubtitlesTrackId", ((window.__assSel = (null)), window.__assActive = /^EMBEDDED_/.test(String(window.__assSel||"")), window.__assSel)), t.updateStream({
+                                             subtitleTrack: {
+                                                 id: e,
+                                                 embedded: !1
