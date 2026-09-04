@@ -36,11 +36,23 @@ jobs:
           mv package.tmp service/package.json
 
       - name: Install webOS CLI
-        run: npm install -g @webosose/ares-cli
+        run: |
+          npm install -g @webos-tools/cli
+          ares-config --profile tv
+          ares -V
 
       - name: Build package
         run: make package
 
+      - name: Verify package
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          IPK="io.strem.webos_${VERSION}_all.ipk"
+
+          test -f "$IPK"
+          ares-package -i "$IPK"
+          ares-package -I "$IPK"
+      
       - name: Generate Homebrew manifest
         run: |
           VERSION="${{ steps.version.outputs.version }}"
