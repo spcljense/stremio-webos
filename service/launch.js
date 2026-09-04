@@ -6,8 +6,6 @@ var http = require('http');
 var fs = require('fs');
 var path = require('path');
 var Service = require('webos-service');
-var assExtract = require('./ass-extract.js');
-var assTee = require('./ass-tee.js');
 var srtAss = require('./srt-ass.js');
 
 var service = new Service('io.strem.webos.server');
@@ -122,141 +120,39 @@ function proxyToStreaming(req, res) {
 http.createServer(function(req, res) {
     var urlPath = req.url.split('?')[0];
 
-    // Full-fidelity embedded ASS/SSA subtitle pipeline.
-    if (urlPath === '/ass/prepare') {
-        var apq = require('url').parse(req.url, true).query || {};
-        res.setHeader('Content-Type', 'application/json');
-        res.setHeader('Cache-Control', 'no-cache');
-        if (!apq.u || !/^https?:\/\//.test(apq.u)) {
-            res.writeHead(400);
-            return res.end('{"error":"bad url"}');
-        }
-        var st = assExtract.prepare(apq.u, parseFloat(apq.t) || 0);
-        res.writeHead(200);
-        return res.end(JSON.stringify(st));
-    }
-
-    if (urlPath === '/ass/status') {
-        var asq = require('url').parse(req.url, true).query || {};
-        res.setHeader('Content-Type', 'application/json');
-        res.setHeader('Cache-Control', 'no-cache');
-        var st2 = asq.t != null
-            ? assExtract.tick(asq.key || '', parseFloat(asq.t) || 0, asq.seek === '1')
-            : assExtract.status(asq.key || '');
-        res.writeHead(200);
-        return res.end(JSON.stringify(st2));
-    }
-
-    if (urlPath === '/ass/get') {
-        var agq = require('url').parse(req.url, true).query || {};
-        var body = assExtract.track(agq.key || '');
-        if (!body) {
-            res.writeHead(404);
-            return res.end('not ready');
-        }
-        res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-cache' });
-        return res.end(body);
-    }
-
-    if (urlPath === '/ass/font') {
-        var afq = require('url').parse(req.url, true).query || {};
-        return fs.readFile(assExtract.fontPath(afq.key || '', afq.f || ''), function(err, buf) {
-            if (err) {
-                res.writeHead(404);
-                return res.end();
-            }
-            res.writeHead(200, { 'Content-Type': 'font/ttf', 'Cache-Control': 'max-age=604800' });
-            res.end(buf);
-        });
-    }
-
-    // The player streams through ass-tee.js, which extracts subtitle events
-    // and embedded fonts from the same bytes without a second media download.
-    if (urlPath === '/ass/track') {
-        var atq = require('url').parse(req.url, true).query || {};
-        res.setHeader('Content-Type', 'application/json');
-        res.setHeader('Cache-Control', 'no-cache');
-        res.writeHead(200);
-        return res.end(JSON.stringify(assTee.status(atq.u || '')));
-    }
-
-    if (urlPath === '/ass/tget') {
-        var gtq = require('url').parse(req.url, true).query || {};
-        var trackTime = gtq.t != null ? parseFloat(gtq.t) : null;
-        var trackWindow = gtq.w != null ? parseFloat(gtq.w) : 0;
-        var track = assTee.trackText(
-            gtq.u || '',
-            parseInt(gtq.trk, 10) || 0,
-            isFinite(trackTime) ? trackTime : null,
-            isFinite(trackWindow) ? trackWindow : 0
-        );
-        if (!track) {
-            res.writeHead(404);
-            return res.end('not ready');
-        }
-        res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-cache' });
-        return res.end(track);
-    }
-
-    if (urlPath === '/ass/tfont') {
-        var tfq = require('url').parse(req.url, true).query || {};
-        var font = assTee.fontData(tfq.u || '', tfq.f || '');
-        if (!font) {
-            res.writeHead(404);
-            return res.end();
-        }
-        res.writeHead(200, { 'Content-Type': 'font/ttf', 'Cache-Control': 'max-age=604800' });
-        return res.end(font);
-    }
-
     if (urlPath === '/ext-sub') {
         var q = require('url').parse(req.url, true).query || {};
         var u = q.u;
-        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-        res.setHeader('Cache-Control', 'no-cache');
         if (!u || !/^https?:\/\//i.test(u)) {
             res.writeHead(400);
             return res.end('');
         }
 
-        var getSubtitle = function(url, redirects, done) {
-            if (redirects > 5) return done(new Error('too many redirects'));
-            var mod = /^https:/i.test(url) ? require('https') : require('http');
-            var request = mod.get(url, { headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': '*/*' } }, function(r) {
-                if (r.statusCode >= 300 && r.statusCode < 400 && r.headers.location) {
-                    r.resume();
-                    return getSubtitle(require('url').resolve(url, r.headers.location), redirects + 1, done);
-                }
-                if (r.statusCode !== 200) {
-                    r.resume();
-                    return done(new Error('status ' + r.statusCode));
-                }
-                var chunks = [];
-                var size = 0;
-                r.on('data', function(d) {
-                    size += d.length;
-                    if (size > 8 * 1024 * 1024) return request.destroy(new Error('too large'));
-                    chunks.push(d);
-                });
-                r.on('end', function() { done(null, Buffer.concat(chunks).toString('utf8')); });
-            });
-            request.on('error', done);
-            request.setTimeout(15000, function() { request.destroy(new Error('timeout')); });
-        };
-
-        getSubtitle(u, 0, function(err, txt) {
-            if (err || !txt) {
+        var mod = /^https:/i.test(u) ? require('https') : require('http');
+        mod.get(u, { headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': '*/*' } }, function(r) {
+            if (r.statusCode !== 200) {
+                r.resume();
                 res.writeHead(502);
                 return res.end('');
             }
-            var ass;
-            try {
-                ass = srtAss.srtToAss(txt, parseInt(q.rx, 10) || 0, parseInt(q.ry, 10) || 0);
-            } catch (e) {
-                ass = '';
-            }
-            res.writeHead(200);
-            res.end(ass || '');
+
+            var chunks = [];
+            r.on('data', function(d) { chunks.push(d); });
+            r.on('end', function() {
+                try {
+                    var txt = Buffer.concat(chunks).toString('utf8');
+                    var ass = srtAss.srtToAss(txt, parseInt(q.rx, 10) || 1920, parseInt(q.ry, 10) || 1080);
+                    res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-cache' });
+                    res.end(ass);
+                } catch (e) {
+                    console.error('ext-sub:', e);
+                    res.writeHead(500);
+                    res.end('');
+                }
+            });
+        }).on('error', function() {
+            res.writeHead(502);
+            res.end('');
         });
 
         return;

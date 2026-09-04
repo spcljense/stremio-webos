@@ -90,8 +90,6 @@
                     const n = _();
                     !P() && n && h.authenticate(n)
                 })), (0, i.EH)((() => {
-                    h.isAuthenticated() && !P() && e.navigate(h.hasPremium && h.hasPremium() ? "/profiles" : "/home", !0)
-                })), (0, i.EH)((() => {
                     P() && v()
                 })), (0, i.EH)((() => {
                     !P() && I() <= 0 && C()

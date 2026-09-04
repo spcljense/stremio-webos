@@ -2234,35 +2234,6 @@
                     }
                 })
             };
-            const ProfileNavButtonLite = e => {
-                const t = () => e.onPress();
-                return (0, o.a0)(i.zo, {
-                    get class() {
-                        return `profile-lite-nav${e.expanded?" expanded":""}`
-                    },
-                    onPress: t,
-                    onClick: t,
-                    get children() {
-                        return [(0, o.a0)(o.wv, {
-                            get when() {
-                                return e.avatar
-                            },
-                            keyed: !0,
-                            get fallback() {
-                                return (0, o.a0)(P.A, {
-                                    class: "profile-lite-nav-icon",
-                                    name: "person"
-                                })
-                            },
-                            children: e => (0, o.a0)(i._V, {
-                                class: "profile-lite-nav-avatar",
-                                src: e
-                            })
-                        }), (t = st(), (0, r.Yr)(t, (() => e.name)), (0, o.gb)((() => (0, r.s7)(t, "profile-lite-nav-name"))), t)];
-                        var t
-                    }
-                })
-            };
             var ut = n(2575),
                 dt = {};
             dt.styleTagTransform = y(), dt.setAttributes = v(), dt.insert = h().bind(null, "head"), dt.domAPI = u(), dt.insertStyleElement = m();
@@ -2328,9 +2299,6 @@
                         {
                             theme: l
                         } = (0, Q.Pj)(),
-                        {
-                            ctx: N
-                        } = (0, Q.gK)(),
                         [s, c, u] = (0, L.zD)(),
                         [d, h, f] = (0, L.zD)(),
                         [v, , , p] = (0, L.zD)(),
@@ -2346,13 +2314,6 @@
                             (0, o.vA)((() => {
                                 f(), u()
                             }))
-                        },
-                        S = () => {
-                            const e = N.selectedProfile && N.selectedProfile();
-                            if (!e) return null;
-                            if (e.gravatar) return e.gravatar;
-                            const t = e.avatar;
-                            return Number.isInteger(t) && t >= 0 && t <= 11 ? `https://www.stremio.com/images/avatars/avatar-${t}.png` : null
                         };
                     return (0, L.k9)(d, (t => {
                         e.setBackDisabled(t)
@@ -2435,26 +2396,7 @@
                                                 }
                                             })]
                                         }
-                                    })), (0, r.Yr)(e, (0, o.a0)(o.wv, {
-                                        get when() {
-                                            return N.hasPremium && N.hasPremium() && N.selectedProfile && N.selectedProfile()
-                                        },
-                                        get children() {
-                                            return (0, o.a0)(ProfileNavButtonLite, {
-                                                get avatar() {
-                                                    return S()
-                                                },
-                                                get name() {
-                                                    const e = N.selectedProfile();
-                                                    return e && e.name || "Account"
-                                                },
-                                                get expanded() {
-                                                    return d()
-                                                },
-                                                onPress: () => m("/profiles")
-                                            })
-                                        }
-                                    }), null), (0, o.gb)((o => {
+                                    })), (0, o.gb)((o => {
                                         var s = ht.content,
                                             c = ht.heading,
                                             u = ht.icon,
@@ -5263,13 +5205,13 @@
                             data: {
                                 hideNavbar: !0
                             }
-                          }, {
-                              name: "profiles",
-                              path: "/profiles",
-                              component: A,
-                              guard: () => t() && n.hasPremium(),
-                              data: {
-                                  hideNavbar: !0
+                        }, {
+                            name: "profiles",
+                            path: "/profiles",
+                            component: A,
+                            guard: t,
+                            data: {
+                                hideNavbar: !0
                             }
                         }, {
                             name: "search",
@@ -11469,21 +11411,25 @@
                 },
                 g = {
                     auth: null,
-                    profiles: [],
                     settings: {},
                     searchHistory: [],
-                    newVideos: {},
-                    contentSettings: [],
-                    streamPresets: [],
-                    hasPremium: !1
+                    newVideos: {}
                 },
-                y = e => ({ ...e.profile,
-                    profiles: Array.isArray(e.userProfiles) ? e.userProfiles : [],
-                    searchHistory: e.searchHistory,
-                    newVideos: e.notifications.items,
-                    contentSettings: e.contentSettings || [],
-                    streamPresets: e.streamPresets || []
-                }),
+                y = e => {
+                    console.log("[CTX DEBUG] top-level keys:", Object.keys(e || {}));
+                    Object.keys(e || {}).forEach((t => {
+                        const n = e[t];
+                        console.log("[CTX DEBUG]", t,
+                            Array.isArray(n) ? "array[" + n.length + "]" :
+                            n && "object" === typeof n ? Object.keys(n) :
+                            typeof n
+                        )
+                    }));
+                    return { ...e.profile,
+                        searchHistory: e.searchHistory,
+                        newVideos: e.notifications.items
+                    }
+                },
                 b = () => {
                     const e = l({
                             model: "ctx",
@@ -11494,12 +11440,8 @@
                         }),
                         {
                             auth: t,
-                            profiles: n,
-                            hasPremium: o,
-                            contentSettings: c,
-                            streamPresets: u,
-                            settings: d,
-                            searchHistory: h
+                            settings: n,
+                            searchHistory: o
                         } = (0, i.J)(e.state),
                         a = (0, r.To)((() => {
                             var e;
@@ -11508,49 +11450,28 @@
                         s = (0, r.To)((() => {
                             var e, n;
                             return null !== (e = null === (n = t()) || void 0 === n ? void 0 : n.user) && void 0 !== e ? e : null
-                        })),
-                        f = (0, r.To)((() => n().find((e => e.selected)) || null)),
-                        v = (0, r.To)((() => {
-                            const e = f();
-                            return e && e._id || n()[0] && n()[0]._id
-                        })),
-                        p = (0, r.To)((() => {
-                            const e = n().find((e => e.isMaster));
-                            return e && e._id || t() && t().user && t().user.parentId
                         }));
                     return { ...e,
                         isAuthenticated: a,
                         user: s,
-                        profiles: n,
-                        selectedProfile: f,
-                        defaultProfileId: v,
-                        masterProfileId: p,
-                        hasPremium: o,
-                        contentSettings: c,
-                        streamPresets: u,
-                        settings: d,
-                        searchHistory: h,
+                        settings: n,
+                        searchHistory: o,
                         authenticate: t => e.dispatchAction("Authenticate", {
                             type: "LoginWithToken",
                             token: t
                         }),
                         logout: () => e.dispatchAction("Logout"),
-                        syncUser: () => e.dispatchAction("PullUserFromAPI", {}),
+                        syncUser: () => e.dispatchAction("PullUserFromAPI"),
                         syncAddons: () => e.dispatchAction("PullAddonsFromAPI"),
                         syncLibrary: () => e.dispatchAction("SyncLibraryWithAPI"),
                         syncNotifications: () => e.dispatchAction("PullNotifications"),
                         addToLibrary: t => e.dispatchAction("AddToLibrary", t),
                         removeFromLibrary: t => e.dispatchAction("RemoveFromLibrary", t.id),
                         rewindLibraryItem: t => e.dispatchAction("RewindLibraryItem", t.id),
-                        updateSettings: t => e.dispatchAction("UpdateSettings", { ...d(),
+                        updateSettings: t => e.dispatchAction("UpdateSettings", { ...n(),
                             ...t
                         }),
-                        selectStreamPreset: t => e.dispatchAction("SelectStreamPreset", t),
-                        clearSearchHistory: () => e.dispatchAction("ClearSearchHistory"),
-                        switchProfile: (t, n) => e.dispatchAction("SwitchProfile", {
-                            profile_id: t,
-                            pin: n
-                        })
+                        clearSearchHistory: () => e.dispatchAction("ClearSearchHistory")
                     }
                 },
                 w = {
@@ -11989,8 +11910,7 @@
                             name: e,
                             args: t
                         }) => {
-                              if ("NewState" === e) c(t);
-                              else if ("CoreEvent" === e && t && "ProfileSwitched" === t.event) window.location.replace("#/home")
+                            if ("NewState" === e) c(t)
                         })), await c(Object.values(l).map((({
                             model: e
                         }) => e))), a(!0)

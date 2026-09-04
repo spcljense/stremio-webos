@@ -26,11 +26,15 @@ service/              # webOS service
   package.json        # Service manifest (main: launch.js)
   services.json       # Luna service registration
   server.js           # [downloaded] Official Stremio streaming server
-  www/                # [built] Vidaa frontend will be totally removed + patches being applied
+  www/                # [built] Vidaa frontend + patches applied
+
+patches/              # Patches applied to Vidaa frontend files during build
+  video.chunk.js.patch
+```
 
 ## How it works
 
-1. `make build` downloads the Stremio server (pinned to a specific commit), copies frontend files into `service/www/`, applies patches
+1. `make build` downloads the Vidaa frontend (pinned to a specific commit) and Stremio server, copies frontend files into `service/www/`, applies patches
 2. `make deploy` packages the IPK via `ares-package` and installs via `ares-install`
 3. On launch: `app/index.html` starts the server service via Luna, polls `:8080` with an `<img>` load, redirects when ready
 4. `service/launch.js` serves the Theater frontend on `:8080` and proxies all non-static requests to the streaming server on `:11470`
@@ -39,7 +43,7 @@ The proxy exists because the app loads from `file://` which cannot XHR/fetch to 
 
 ## Patches
 
-Patches in `patches/` are applied during `make build`.
+Patches in `patches/` are applied to Vidaa frontend files during `make build`. They are unified diffs against the pinned Vidaa commit.
 
 ### video.chunk.js.patch
 

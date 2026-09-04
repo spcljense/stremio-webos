@@ -1,0 +1,77 @@
+.profile-lite-nav {
+    position: absolute;
+    bottom: 1rem;
+    left: 2rem;
+    width: 6rem;
+    height: 5.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-radius: 1rem;
+    opacity: 0.55;
+    transition: width 0.1s ease-out, opacity 0.1s ease-out, background-color 0.1s ease-out;
+}
+
+.profile-lite-nav.expanded {
+    width: 16rem;
+    justify-content: flex-start;
+    padding: 0 1.75rem;
+}
+
+.profile-lite-nav[focused],
+.profile-lite-nav:hover {
+    background-color: #2a2a2d;
+    opacity: 1;
+}
+
+.profile-lite-nav-icon {
+    flex: none;
+    width: 3rem;
+    height: 3rem;
+    color: hsla(0, 0%, 100%, 0.9);
+}
+
+.profile-lite-nav-avatar {
+    flex: none;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.profile-lite-nav-name {
+    display: none;
+    margin-left: 1.25rem;
+    overflow: hidden;
+    color: #fff;
+    font-size: 1.25rem;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.profile-lite-nav.expanded .profile-lite-nav-name {
+    display: block;
+}
+
+.profiles-lite-list {
+    width: 32rem;
+    max-height: 60vh;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    overflow-y: auto;
+}
+
+.profiles-lite-button {
+    width: 100%;
+    margin: 0.45rem 0;
+}
+
+.profiles-lite-hint {
+    max-width: 36rem;
+    color: hsla(0, 0%, 100%, 0.65);
+    font-size: 1.35rem;
+    text-align: center;
+}

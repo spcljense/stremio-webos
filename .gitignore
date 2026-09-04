@@ -2,5 +2,3 @@
 service/server.js
 service/www/
 service/bin/
-node_modules/
-vactest/out/

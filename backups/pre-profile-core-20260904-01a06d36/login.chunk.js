@@ -51,7 +51,7 @@
                     readData: p,
                     info: b,
                     authKey: _
-                } = m, [I, Z] = (0, i.n5)(3e5), R = () => {
+                } = m, [I, Z] = (0, i.n5)(3e5), [D, O] = (0, i.n5)([]), [B, F] = (0, i.n5)(!1), R = () => {
                     var n;
                     return null === (n = b()) || void 0 === n ? void 0 : n.qrcode
                 }, P = () => {
@@ -60,37 +60,44 @@
                 }, A = () => {
                     var e, t;
                     return null !== (e = null === (t = h.user()) || void 0 === t ? void 0 : t.email) && void 0 !== e ? e : n("ACCOUNT")
-                }, D = () => h.profiles ? h.profiles() : [], U = () => {
-                    const e = h.selectedProfile && h.selectedProfile();
-                    return e && e.name ? `Current: ${e.name}` : "Choose a profile"
-                }, L = n => {
-                    console.error("[profiles] Failed to switch profile:", n), window.alert("Could not switch profile. Check the PIN and try again.")
-                }, Y = n => {
-                    const e = n && (n._id || n.id);
-                    if (!e || !h.switchProfile) return;
-                    let t;
-                    if (n.hasPin) {
-                        t = window.prompt(`Enter the 4-digit PIN for ${n.name||"this profile"}`);
-                        if (null === t) return;
-                        if (t = String(t).trim(), !/^\d{4}$/.test(t)) return void window.alert("The PIN must contain exactly 4 digits.")
-                    }
-                    try {
-                        Promise.resolve(h.switchProfile(e, t)).catch(L)
-                    } catch (n) {
-                        L(n)
-                    }
+                }, L = () => {
+                    var n, e;
+                    if (!P() || !h.isAuthenticated() || B()) return;
+                    const t = null === (e = null === (n = h.state()) || void 0 === n ? void 0 : n.auth) || void 0 === e ? void 0 : e.key;
+                    t && (F(!0), fetch("https://api.strem.io/api/getUser", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            type: "GetUser",
+                            authKey: t
+                        })
+                    }).then((n => {
+                        if (!n.ok) throw new Error("Profile request failed");
+                        return n.json()
+                    })).then((n => {
+                        const e = n && n.result,
+                            t = e && (e.user || e),
+                            r = t && (t.premiumPrefs || t.premium_prefs),
+                            o = r && (r.userProfiles || r.user_profiles);
+                        Array.isArray(o) && O(o)
+                    })).catch((() => {})))
+                }, U = () => {
+                    const e = D().map((n => n && n.name)).filter(Boolean);
+                    return e.length ? e.join("   •   ") : A()
                 }, x = () => {
                     const n = Math.floor(I() / 6e4 % 60),
                         e = Math.floor(I() / 1e3 % 60);
                     return `${n}:${e<10?"0":""}${e}`
-                }, C = () => window.location.reload(), W = () => {
-                    P() ? e.navigate("/home", !0) : k.quit()
+                }, C = () => window.location.reload(), Y = () => e.navigate("/home", !0), W = () => {
+                    k.quit()
                 };
                 return (0, i.EH)((() => {
                     const n = _();
                     !P() && n && h.authenticate(n)
-                })), (0, i.EH)((() => {
-                    h.isAuthenticated() && !P() && e.navigate(h.hasPremium && h.hasPremium() ? "/profiles" : "/home", !0)
+                })), (0, i.EH)(L), (0, i.EH)((() => {
+                    h.isAuthenticated() && !P() && e.navigate("/profiles", !0)
                 })), (0, i.EH)((() => {
                     P() && v()
                 })), (0, i.EH)((() => {
@@ -180,40 +187,16 @@
                                 var e
                             },
                             get children() {
-                                return [(e = H(), t = e.firstChild, r = t.nextSibling, (0, l.Yr)(r, U), (0, i.gb)((() => (0, l.s7)(e, T.login))), (0, i.gb)((() => (0, l.s7)(t, T.title))), (0, i.gb)((() => (0, l.s7)(r, "profiles-lite-hint"))), e), (0, i.a0)(i.wv, {
-                                    get when() {
-                                        return D().length
+                                return [(e = H(), t = e.firstChild, r = t.nextSibling, (0, l.Yr)(r, U), (0, i.gb)((() => (0, l.s7)(e, T.login))), (0, i.gb)((() => (0, l.s7)(t, T.title))), (0, i.gb)((() => (0, l.s7)(r, T.timer))), e), (0, i.a0)(c.$n, {
+                                    get class() {
+                                        return T.button
                                     },
-                                    get fallback() {
-                                        return (0, i.a0)(c.Rh, {
-                                            get class() {
-                                                return T.loading
-                                            }
-                                        })
+                                    icon: "person",
+                                    get label() {
+                                        return n("CONTINUE")
                                     },
-                                    get children() {
-                                        return (0, i.a0)(a.Gk, {
-                                            class: "profiles-lite-list",
-                                            get children() {
-                                                return (0, i.a0)(i.a, {
-                                                    get each() {
-                                                        return D()
-                                                    },
-                                                    children: (n, e) => (0, i.a0)(c.$n, {
-                                                        class: "profiles-lite-button",
-                                                        icon: "person",
-                                                        get label() {
-                                                            return n && n.name || A()
-                                                        },
-                                                        get autoFocus() {
-                                                            return 0 === e()
-                                                        },
-                                                        onPress: () => Y(n)
-                                                    })
-                                                })
-                                            }
-                                        })
-                                    }
+                                    autoFocus: !0,
+                                    onPress: Y
                                 })];
                                 var e, t, r
                             }

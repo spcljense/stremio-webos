@@ -15940,16 +15940,6 @@
                                 var n = v.find((function(e) {
                                     return e.id === t
                                 }));
-                                try {
-                                    // Route EXTERNAL subs through our JASSUB renderer instead of this
-                                    // HTML overlay: capture the url, mark the selection, and return
-                                    // BEFORE fetching/parsing/drawing (g stays null -> empty overlay).
-                                    // ass-controller.js renders it (converting SRT+{\an} tags to ASS).
-                                    if (n) { window.__extraSubs = window.__extraSubs || {}; window.__extraSubs[n.id] = { url: n.url || null, lang: n.lang, label: n.label }; window.__extraSubSel = n.id; y = n.id, T = 0; }
-                                    else { window.__extraSubSel = null; }
-                                    window.dispatchEvent(new Event("ass-selectionchange"));
-                                    return I(), D("selectedExtraSubtitlesTrackId"), D("extraSubtitlesDelay"), !0;
-                                } catch (__e) {}
                                 if (n) {
                                     y = n.id, T = 0,
                                         function e(t, i) {
@@ -20210,6 +20200,41 @@
                 }, window.webOS.service.request(n || "luna://com.webos.media", e)
             }
 
+            function u(e, t, r) {
+                window.webOS.service.request("luna://com.webos.applicationManager", {
+                    method: "launch",
+                    parameters: {
+                        id: e.id,
+                        params: {
+                            payload: [{
+                                fullPath: e.url,
+                                artist: "",
+                                subtitle: "",
+                                dlnaInfo: {
+                                    flagVal: 4096,
+                                    cleartextSize: "-1",
+                                    contentLength: "-1",
+                                    opVal: 1,
+                                    protocolInfo: "http-get:*:video/x-matroska:DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS=01700000000000000000000000000000",
+                                    duration: 0
+                                },
+                                mediaType: "VIDEO",
+                                thumbnail: "",
+                                deviceType: "DMR",
+                                album: "",
+                                fileName: e.name,
+                                lastPlayPosition: e.position
+                            }]
+                        }
+                    },
+                    onSuccess: function() {
+                        t && t()
+                    },
+                    onFailure: function() {
+                        r && r(new Error("Failed to launch" + e.id)), "com.webos.app.photovideo" === e.id ? (e.id = "com.webos.app.smartshare", u(e, t, r)) : "com.webos.app.smartshare" === e.id && (e.id = "com.webos.app.mediadiscovery", u(e, t, r))
+                    }
+                })
+            }
             var c = ["none", "black", "white", "yellow", "red", "green", "blue"],
                 d = {
                     "rgba(0, 0, 0, 0)": "none",
@@ -20315,10 +20340,24 @@
                                 e = s.HTML_VIDEO.MEDIA_ERR_NETWORK;
                                 break;
                             case 3:
-                                e = s.HTML_VIDEO.MEDIA_ERR_DECODE;
+                                e = s.HTML_VIDEO.MEDIA_ERR_DECODE, u({
+                                    id: "com.webos.app.photovideo",
+                                    url: D.url,
+                                    name: "Stremio",
+                                    position: -1
+                                }, null, (function(e) {
+                                    console.error(e)
+                                }));
                                 break;
                             case 4:
-                                e = s.HTML_VIDEO.MEDIA_ERR_SRC_NOT_SUPPORTED;
+                                e = s.HTML_VIDEO.MEDIA_ERR_SRC_NOT_SUPPORTED, u({
+                                    id: "com.webos.app.photovideo",
+                                    url: D.url,
+                                    name: "Stremio",
+                                    position: -1
+                                }, null, (function(e) {
+                                    console.error(e)
+                                }));
                                 break;
                             default:
                                 e = s.UNKNOWN_ERROR
@@ -20456,7 +20495,6 @@
                         muted: !1,
                         playbackSpeed: !1
                     },
-                    __probeSession = window.StreamProbeSession.create(),
                     P = !1,
                     M = {
                         audio: [],
@@ -20464,14 +20502,7 @@
                     };
 
                 function F() {
-                    var __probe = __probeSession.start(D && D.url);
-                    if (!__probe) return;
-                    P = !0;
-                    var __subAttempt = 0;
-                    (function __F() {
-                    if (!__probeSession.isCurrent(__probe)) return;
-                    o(__probe.url, (function(e) {
-                        if (!__probeSession.isCurrent(__probe)) return;
+                    P || null === D || (P = !0, o(D.url, (function(e) {
                         var t = 0,
                             r = 0;
                         y = [], T = [], e && (M = e), ((M || {}).subs || []).length && (M.subs.forEach((function(e) {
@@ -20486,7 +20517,7 @@
                                     mode: r === p ? "showing" : "disabled"
                                 })
                             }
-                        })), G("subtitlesTracks"), G("selectedSubtitlesTrackId")), ((M || {}).audio || []).length && !(A.audioTracks && A.audioTracks.length) && (M.audio.forEach((function(e) {
+                        })), G("subtitlesTracks"), G("selectedSubtitlesTrackId")), ((M || {}).audio || []).length && (M.audio.forEach((function(e) {
                             if (!h.unsupportedAudio.includes(e.codec || "")) {
                                 var t = r;
                                 r++, v || T.length || (v = t), T.push({
@@ -20498,21 +20529,8 @@
                                     mode: t === v ? "showing" : "disabled"
                                 })
                             }
-                        })), v = "EMBEDDED_0", G("audioTracks"), G("selectedAudioTrackId"));
-                        // A COLD streaming-server probe returns [] until it has downloaded and
-                        // ffprobed enough of the file. This fetch used to be single-shot, so the
-                        // embedded subtitle list (its ONLY source on the native-decode path, where
-                        // subs never surface as HTML5 textTracks) stayed empty until a manual replay
-                        // warmed the server cache. Retry with backoff until the probe yields tracks.
-                        // Audio may be discovered before subtitle tracks, so only a supported subtitle
-                        // ends discovery. The attempt cap keeps genuinely subtitle-free files bounded.
-                        // Native audioTracks owns audio when present, so late retries cannot clobber it.
-                        try { if (localStorage.getItem("assLog") === "1") console.log("[sublist] attempt " + __subAttempt + " subs=" + (((M || {}).subs || []).length) + " audio=" + (((M || {}).audio || []).length)); } catch (e) {}
-                        if (window.SubtitleTransition.shouldRetryTrackProbe(y.length, ++__subAttempt, 15)) {
-                            setTimeout(__F, Math.min(800 + 400 * __subAttempt, 4000));
-                        }
-                    }))
-                    })();
+                        })), v = "EMBEDDED_0", G("audioTracks"), G("selectedAudioTrackId"))
+                    })))
                 }
 
                 function N(e) {
@@ -20537,7 +20555,7 @@
                         case "subtitlesTracks":
                             return null === D ? [] : y;
                         case "selectedSubtitlesTrackId":
-                            return null === D ? null : p;
+                            return null === D || m ? null : p;
                         case "subtitlesOffset":
                             return w ? null : x;
                         case "subtitlesSize":
@@ -20591,7 +20609,7 @@
                             break;
                         case "selectedSubtitlesTrackId":
                             if (A.mediaId && null !== D && 0 === (t || "").indexOf("EMBEDDED_")) {
-                                E(!1), b.bg_opacity = "none" === b.bg_color ? 0 : 255, ["setSubtitleCharacterColor", "setSubtitleBackgroundColor", "setSubtitlePosition", "setSubtitleFontSize", "setSubtitleBackgroundOpacity", "setSubtitleCharacterOpacity"].forEach((function(e) {
+                                E(!0), b.bg_opacity = "none" === b.bg_color ? 0 : 255, ["setSubtitleCharacterColor", "setSubtitleBackgroundColor", "setSubtitlePosition", "setSubtitleFontSize", "setSubtitleBackgroundOpacity", "setSubtitleCharacterOpacity"].forEach((function(e) {
                                     l({
                                         method: e,
                                         parameters: {
@@ -20604,7 +20622,7 @@
                                             charOpacity: b.char_opacity
                                         }
                                     })
-                                })), console.log("WebOS", "change subtitles for id: ", A.mediaId, " index:", t), p = t, window.__assSel = t, window.__assActive = !0;
+                                })), console.log("WebOS", "change subtitles for id: ", A.mediaId, " index:", t), p = t;
                                 var r = parseInt(t.replace("EMBEDDED_", ""));
                                 console.log("set subs to track idx: " + r), setTimeout((function() {
                                     var e = function() {
@@ -20620,11 +20638,11 @@
                                         parameters: {
                                             type: "text",
                                             mediaId: A.mediaId,
-                                            index: -1
+                                            index: r
                                         }
                                     }, e, e)
                                 }), 500)
-                            } - 1 === (t || "").indexOf("EMBEDDED_") && (p = null, window.__assSel = null, window.__assActive = !1, G("selectedSubtitlesTrackId"), E(!1));
+                            } - 1 === (t || "").indexOf("EMBEDDED_") && (p = null, G("selectedSubtitlesTrackId"), E(!1));
                             break;
                         case "subtitlesOffset":
                             if (null !== t && isFinite(t)) {
@@ -20744,11 +20762,9 @@
                     switch (e) {
                         case "load":
                             if (r && r.stream && "string" == typeof r.stream.url) {
-                                D = r.stream, __probeSession.load(D.url), window.SubtitleTransition.resetSelection(window),
-                                p = null, P = !1, M = { audio: [], subs: [] }, y = [], T = [],
-                                C = r.time, G("stream"), A.autoplay = "boolean" != typeof r.autoplay || r.autoplay, G("loaded"), G("paused"), G("time"), G("duration"), G("buffering"), G("buffered"), G("subtitlesTracks"), G("selectedSubtitlesTrackId"), G("audioTracks"), G("selectedAudioTrackId");
+                                D = r.stream, C = r.time, G("stream"), A.autoplay = "boolean" != typeof r.autoplay || r.autoplay, G("loaded"), G("paused"), G("time"), G("duration"), G("buffering"), G("buffered"), G("subtitlesTracks"), G("selectedSubtitlesTrackId"), G("audioTracks"), G("selectedAudioTrackId");
                                 var n = 0;
-                                A.src = (/^https?:\/\/(?!127\.0\.0\.1)/.test(D.url) ? "http://127.0.0.1:11474/s/" + encodeURIComponent(D.url) : D.url), i = function() {
+                                A.src = D.url, i = function() {
                                     try {
                                         A.load()
                                     } catch (e) {}
@@ -20765,8 +20781,6 @@
                             }));
                             break;
                         case "unload":
-                            __probeSession.unload(), window.SubtitleTransition.resetSelection(window),
-                            p = null, P = !1, M = { audio: [], subs: [] }, y = [], T = [],
                             D = null, C = null, Array.from(A.textTracks).forEach((function(e) {
                                 e.oncuechange = null
                             })), A.removeAttribute("src"), A.load(), G("stream"), G("paused"), G("time"), G("duration"), G("buffering"), G("buffered"), G("subtitlesTracks"), G("selectedSubtitlesTrackId"), G("audioTracks"), G("selectedAudioTrackId");

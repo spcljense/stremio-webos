@@ -1,5 +1,4 @@
 name: Release
-run-name: Release ${{ github.ref_name }}
 
 on:
   push:
@@ -14,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
       - name: Get version
         id: version
@@ -35,9 +34,6 @@ jobs:
             service/package.json > package.tmp
 
           mv package.tmp service/package.json
-
-      - name: Test subtitle pipeline
-        run: make test
 
       - name: Install webOS CLI
         run: npm install -g @webosose/ares-cli
@@ -72,7 +68,7 @@ jobs:
           EOF2
 
       - name: Create GitHub release
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@v2
         with:
           files: |
             io.strem.webos_${{ steps.version.outputs.version }}_all.ipk

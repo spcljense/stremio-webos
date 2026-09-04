@@ -20229,6 +20229,41 @@
                 }, window.webOS.service.request(n || "luna://com.webos.media", e)
             }
 
+            function u(e, t, r) {
+                window.webOS.service.request("luna://com.webos.applicationManager", {
+                    method: "launch",
+                    parameters: {
+                        id: e.id,
+                        params: {
+                            payload: [{
+                                fullPath: e.url,
+                                artist: "",
+                                subtitle: "",
+                                dlnaInfo: {
+                                    flagVal: 4096,
+                                    cleartextSize: "-1",
+                                    contentLength: "-1",
+                                    opVal: 1,
+                                    protocolInfo: "http-get:*:video/x-matroska:DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS=01700000000000000000000000000000",
+                                    duration: 0
+                                },
+                                mediaType: "VIDEO",
+                                thumbnail: "",
+                                deviceType: "DMR",
+                                album: "",
+                                fileName: e.name,
+                                lastPlayPosition: e.position
+                            }]
+                        }
+                    },
+                    onSuccess: function() {
+                        t && t()
+                    },
+                    onFailure: function() {
+                        r && r(new Error("Failed to launch" + e.id)), "com.webos.app.photovideo" === e.id ? (e.id = "com.webos.app.smartshare", u(e, t, r)) : "com.webos.app.smartshare" === e.id && (e.id = "com.webos.app.mediadiscovery", u(e, t, r))
+                    }
+                })
+            }
             var c = ["none", "black", "white", "yellow", "red", "green", "blue"],
                 d = {
                     "rgba(0, 0, 0, 0)": "none",
@@ -20334,10 +20369,24 @@
                                 e = s.HTML_VIDEO.MEDIA_ERR_NETWORK;
                                 break;
                             case 3:
-                                e = s.HTML_VIDEO.MEDIA_ERR_DECODE;
+                                e = s.HTML_VIDEO.MEDIA_ERR_DECODE, u({
+                                    id: "com.webos.app.photovideo",
+                                    url: D.url,
+                                    name: "Stremio",
+                                    position: -1
+                                }, null, (function(e) {
+                                    console.error(e)
+                                }));
                                 break;
                             case 4:
-                                e = s.HTML_VIDEO.MEDIA_ERR_SRC_NOT_SUPPORTED;
+                                e = s.HTML_VIDEO.MEDIA_ERR_SRC_NOT_SUPPORTED, u({
+                                    id: "com.webos.app.photovideo",
+                                    url: D.url,
+                                    name: "Stremio",
+                                    position: -1
+                                }, null, (function(e) {
+                                    console.error(e)
+                                }));
                                 break;
                             default:
                                 e = s.UNKNOWN_ERROR
