@@ -1,4 +1,7 @@
 *.ipk
+*.before-*
 service/server.js
 service/www/
 service/bin/
+backups/
+
