@@ -1,3 +1,7 @@
+<img width="1920" height="1080" alt="capture" src="https://github.com/user-attachments/assets/b2a4967c-1b01-44e9-a3f3-6b766fc87658" />
+<img width="1920" height="1080" alt="capture2" src="https://github.com/user-attachments/assets/5854e415-5ecf-4176-ad99-3664858bac32" />
+
+
 # Stremio for webOS
 
 Standalone and optimized Stremio build for LG webOS TVs.
@@ -63,3 +67,4 @@ Download the IPK matching the current release, for example:
 
 ```text
 io.strem.webos_1.1.0_all.ipk
+ 
