@@ -2,52 +2,64 @@
 
 Standalone and optimized Stremio build for LG webOS TVs.
 
-This project is specifically maintained for webOS and includes faster startup, native media integration, preferred audio language selection, and the official Stremio streaming server.
+This project is specifically maintained for webOS and focuses on improved performance, native LG media integration, correct audio track selection, multi-profile support for eligible accounts, and a streamlined TV experience.
 
-The official Stremio app may ignore the user's preferred audio language and simply select the first available audio track. This build reads the tracks exposed by the TV's native media pipeline and automatically selects the track matching your configured language.
+Built on Stremio Theater and stripped of unnecessary non-webOS platform code for a cleaner and faster LG webOS experience.
 
-Built on Stremio Theater v1.9.2 and stripped of unnecessary non-webOS platform code for a cleaner and faster LG webOS experience.
+## Features
+
+- Multi-profile support for users with an active Stremio Supporter subscription
+- Profile selection directly on the TV
+- Support for PIN-protected profiles
+- Faster startup and responsive TV navigation
+- Native LG webOS media player integration
+- Automatic preferred audio language selection
+- Improved handling of multiple audio tracks
+- Official Stremio streaming server integration
+- Optimized specifically for LG webOS TVs
+- Standalone application ID, allowing installation alongside the official Stremio app
+
+### Preferred audio language
+
+The official Stremio app may sometimes select the first available audio track instead of the user's configured preferred language.
+
+This build reads the audio tracks exposed by the LG TV's native media pipeline and automatically selects the track matching the preferred audio language configured in Stremio.
+
+### Multi-profile support
+
+Starting with **stremio-webos 1.1.0**, this build supports Stremio multi-profile functionality.
+
+Multi-profile access is available only to accounts with an active **Stremio Supporter subscription**.
+
+Eligible users can select between their available profiles directly on the TV. PIN-protected profiles are also supported.
+
+Free accounts do not have access to Stremio's multi-profile feature.
 
 # Installation
 
-# Homebrew Channel
+## Homebrew Channel
 
 For rooted LG webOS TVs with [Homebrew Channel](https://github.com/webosbrew/webos-homebrew-channel):
 
 1. Open **Homebrew Channel** on your TV.
 2. Open **Settings**.
-3. Add the following repository: https://raw.githubusercontent.com/spcljense/stremio-webos/main/webosbrew/apps.json
+3. Add the following repository:
+
+   `https://raw.githubusercontent.com/spcljense/stremio-webos/main/webosbrew/apps.json`
+
 4. Return to the app list.
-5. Find Stremio and install it.
+5. Find **Stremio**.
+6. Install and launch the app.
 
-# Manual installation
+Updates published through this repository can also be installed through Homebrew Channel.
 
-You can also install the IPK manually using the webOS CLI.
+## GitHub Release
 
-# Requirements
+Prebuilt IPK packages are available from the GitHub Releases page:
 
-Node.js
-webOS ares CLI
-LG TV configured with Developer Mode or SSH/root access
+[Download the latest release](https://github.com/spcljense/stremio-webos/releases/latest)
 
-# Install the CLI
+Download the IPK matching the current release, for example:
 
-npm install -g @webosose/ares-cli
-
-# Configure your TV
-
-ares-setup-device
-
-# Then clone and deploy
-
-git clone https://github.com/spcljense/stremio-webos.git
-cd stremio-webos
-make deploy
-
-# Or install a downloaded release directly
-ares-install --device tv io.strem.webos_VERSION_all.ipk
-
-# Application ID
-io.strem.webos
-
-The custom application ID allows this build to coexist with the official Stremio app without package conflicts.
+```text
+io.strem.webos_1.1.0_all.ipk
