@@ -1,6 +1,5 @@
-<img width="1920" height="1080" alt="capture" src="https://github.com/user-attachments/assets/b2a4967c-1b01-44e9-a3f3-6b766fc87658" />
-<img width="1920" height="1080" alt="capture2" src="https://github.com/user-attachments/assets/5854e415-5ecf-4176-ad99-3664858bac32" />
-
+<img width="1920" height="1080" alt="capture" src="https://github.com/user-attachments/assets/eb5f79c2-3f2c-4ddb-b8cc-061b02a56196" />
+<img width="1920" height="1080" alt="capture2" src="https://github.com/user-attachments/assets/5c86999c-aed8-4fbb-9517-e809bf472c7a" />
 
 # Stremio for webOS
 
