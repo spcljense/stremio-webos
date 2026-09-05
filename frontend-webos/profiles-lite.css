@@ -413,3 +413,94 @@
 }
 
 /* OFFICIAL STYLE PROFILE PIN MODAL END */
+
+/* OFFICIAL-STYLE SIDEBAR PROFILE */
+
+.profile-lite-nav {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+
+    padding: 1rem !important;
+    border-radius: 1rem 0 0 1rem !important;
+
+    opacity: .45;
+    overflow: hidden !important;
+}
+
+.profile-lite-nav.expanded {
+    width: 16rem !important;
+    height: 5rem !important;
+
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+
+    padding: 1rem !important;
+    border-radius: 1rem !important;
+}
+
+.profile-lite-nav-avatar,
+.profile-lite-nav-icon {
+    flex: 0 0 3rem !important;
+
+    width: 3rem !important;
+    height: 3rem !important;
+
+    margin: 0 !important;
+
+    transform: none !important;
+}
+
+.profile-lite-nav-avatar {
+    border-radius: 50% !important;
+    object-fit: cover !important;
+}
+
+.profile-lite-nav-name {
+    display: none !important;
+}
+
+.profile-lite-nav.expanded .profile-lite-nav-name {
+    display: block !important;
+
+    width: auto !important;
+    max-width: 10rem !important;
+
+    margin: 0 0 0 1rem !important;
+
+    color: #fff !important;
+    font-size: 1.25rem !important;
+    font-weight: 600 !important;
+    line-height: normal !important;
+
+    text-align: left !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+.profile-lite-nav[focused],
+.profile-lite-nav:hover {
+    background: #2a2a2d !important;
+    opacity: 1 !important;
+
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.profile-lite-nav[focused] .profile-lite-nav-avatar,
+.profile-lite-nav:hover .profile-lite-nav-avatar,
+.profile-lite-nav[focused] .profile-lite-nav-icon,
+.profile-lite-nav:hover .profile-lite-nav-icon {
+    transform: none !important;
+}
+
+/* END OFFICIAL-STYLE SIDEBAR PROFILE */
