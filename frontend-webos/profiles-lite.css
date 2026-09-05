@@ -321,3 +321,95 @@
 }
 
 /* PROFILE HEADER SPACING END */
+
+/* OFFICIAL STYLE PROFILE PIN MODAL START */
+
+.profile-pin-modal {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: hsla(0, 0%, 100%, 0.9);
+    margin-top: -2rem !important;
+}
+
+.profile-pin-avatar {
+    width: 5.5rem;
+    height: 5.5rem;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.5);
+    margin: -3rem 0 0.75rem;
+}
+
+.profile-pin-name {
+    font-size: 1.15rem;
+    color: rgba(255,255,255,0.5);
+    font-weight: 500;
+    margin-bottom: 1.5rem;
+}
+
+.profile-pin-title {
+    margin-bottom: 0.75rem;
+    font-size: 2rem;
+    font-weight: 600;
+    color: hsla(0,0%,100%,0.9);
+}
+
+.profile-pin-dots {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 3rem;
+    margin-bottom: 1rem;
+}
+
+.profile-pin-dot {
+    width: 1rem;
+    height: 1rem;
+    margin: 0.5rem;
+    border-radius: 50%;
+    border: 3px solid rgba(255,255,255,0.5);
+    background: transparent;
+}
+
+.profile-pin-dot.filled {
+    background: hsla(0,0%,100%,0.9);
+    border-color: hsla(0,0%,100%,0.9);
+}
+
+.profile-pin-keypad {
+    display: grid;
+    grid-template-columns: repeat(3, 4.25rem);
+    grid-auto-rows: 4.25rem;
+}
+
+.profile-pin-key {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3.625rem;
+    height: 3.625rem;
+    margin: 0.3125rem;
+    border-radius: 1rem;
+    border: 0.2rem solid transparent;
+    background: #2a2a2d;
+    color: hsla(0,0%,100%,0.9);
+    font-size: 1.75rem;
+    font-weight: 600;
+    line-height: 1.75rem;
+    user-select: none;
+    transition:
+        border-color 0.1s ease-out,
+        background-color 0.1s ease-out;
+}
+
+.profile-pin-key[focused],
+.profile-pin-key:hover {
+    border-color: rgba(255,255,255,0.5);
+}
+
+.profile-pin-key.action {
+    font-size: 1.6rem;
+}
+
+/* OFFICIAL STYLE PROFILE PIN MODAL END */
