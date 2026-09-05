@@ -56,17 +56,80 @@
 }
 
 .profiles-lite-list {
-    width: 32rem;
-    max-height: 60vh;
+    width: auto;
+    max-width: none;
     display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    overflow-y: auto;
+    flex-direction: row;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 4rem;
+    overflow: visible;
 }
 
-.profiles-lite-button {
+.profiles-lite-button.button-FYnSC {
+    width: 14rem;
+    min-width: 14rem;
+    height: 13rem;
+    min-height: 13rem;
+    padding: 1rem;
+    margin: 0;
+    box-sizing: border-box;
+
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+
+    background: transparent !important;
+    border: none !important;
+}
+
+.profiles-lite-button.button-FYnSC > * {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+
+.profiles-lite-button.button-FYnSC .icon-vMHfQ {
+    width: 8rem !important;
+    height: 8rem !important;
+    flex: 0 0 8rem !important;
+
+    margin: 0 0 1.25rem 0 !important;
+
+    border-radius: 50%;
+    object-fit: cover;
+
+    transition:
+        transform 0.12s ease-out,
+        outline 0.12s ease-out;
+}
+
+.profiles-lite-button.button-FYnSC .label-M7e3J {
     width: 100%;
-    margin: 0.45rem 0;
+    max-width: 100%;
+    flex: none !important;
+
+    margin: 0 !important;
+
+    font-size: 1.4rem;
+    line-height: 1.6rem;
+    text-align: center;
+    white-space: nowrap;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.profiles-lite-button.button-FYnSC[focused],
+.profiles-lite-button.button-FYnSC:hover {
+    background: transparent !important;
+}
+
+.profiles-lite-button.button-FYnSC[focused] .icon-vMHfQ,
+.profiles-lite-button.button-FYnSC:hover .icon-vMHfQ {
+    outline: 0.3rem solid rgba(255,255,255,0.9);
+    outline-offset: 0.35rem;
+    transform: scale(1.05);
 }
 
 .profiles-lite-hint {
@@ -75,3 +138,186 @@
     font-size: 1.35rem;
     text-align: center;
 }
+
+
+/* PROFILE MODERN FOCUS START */
+
+/* Geen vierkant/grijs selectievlak rond de profielkaart */
+.profiles-lite-button.button-FYnSC,
+.profiles-lite-button.button-FYnSC[focused],
+.profiles-lite-button.button-FYnSC:hover,
+.profiles-lite-button.button-FYnSC.selected {
+    background: transparent !important;
+    border-color: transparent !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* Avatar blijft rond en animeert soepel */
+.profiles-lite-button.button-FYnSC .icon-vMHfQ {
+    transition: transform 0.16s ease-out !important;
+    transform: scale(1);
+}
+
+/* Alleen geselecteerde avatar wordt groter */
+.profiles-lite-button.button-FYnSC[focused] .icon-vMHfQ,
+.profiles-lite-button.button-FYnSC:hover .icon-vMHfQ {
+    transform: scale(1.16);
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* PROFILE MODERN FOCUS END */
+
+
+
+
+/* SIDEBAR PROFILE V3 START */
+
+/* Alleen uiterlijk van de bestaande knop aanpassen */
+.profile-lite-nav,
+.profile-lite-nav[focused],
+.profile-lite-nav:hover {
+    background: transparent !important;
+    border-color: transparent !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* Avatar rond houden en soepel vergroten */
+.profile-lite-nav-avatar {
+    border-radius: 50% !important;
+    object-fit: cover !important;
+    transition: transform 0.16s ease-out !important;
+    transform-origin: center center !important;
+}
+
+/* Geen vierkant focusvlak: alleen avatar groter */
+.profile-lite-nav[focused] .profile-lite-nav-avatar,
+.profile-lite-nav:hover .profile-lite-nav-avatar {
+    transform: scale(1.14);
+}
+
+/* Profielnaam iets kleiner voor langere namen */
+.profile-lite-nav-name {
+    font-size: 0.9rem !important;
+    line-height: 1.05rem !important;
+    text-align: center !important;
+}
+
+/* SIDEBAR PROFILE V3 END */
+
+/* SIDEBAR PROFILE FINAL START */
+
+.profile-lite-nav {
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    padding: 0 !important;
+    overflow: visible !important;
+
+    opacity: 0.72;
+}
+
+.profile-lite-nav.expanded {
+    width: 16rem !important;
+    height: 8rem !important;
+
+    padding: 0 !important;
+
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    overflow: visible !important;
+}
+
+.profile-lite-nav[focused],
+.profile-lite-nav:hover {
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    opacity: 1 !important;
+}
+
+.profile-lite-nav-avatar {
+    flex: none !important;
+
+    width: 4rem !important;
+    height: 4rem !important;
+
+    margin: 0 !important;
+
+    border-radius: 50% !important;
+    object-fit: cover !important;
+
+    transform: scale(1);
+    transform-origin: center center !important;
+    transition: transform 0.16s ease-out !important;
+}
+
+.profile-lite-nav-icon {
+    flex: none !important;
+
+    width: 4rem !important;
+    height: 4rem !important;
+
+    margin: 0 !important;
+
+    transform: scale(1);
+    transform-origin: center center !important;
+    transition: transform 0.16s ease-out !important;
+}
+
+.profile-lite-nav[focused] .profile-lite-nav-avatar,
+.profile-lite-nav:hover .profile-lite-nav-avatar,
+.profile-lite-nav[focused] .profile-lite-nav-icon,
+.profile-lite-nav:hover .profile-lite-nav-icon {
+    transform: scale(1.14);
+}
+
+.profile-lite-nav-name {
+    display: none !important;
+}
+
+.profile-lite-nav.expanded .profile-lite-nav-name {
+    display: block !important;
+
+    width: 13.5rem !important;
+    max-width: 13.5rem !important;
+
+    margin: 0.55rem 0 0 0 !important;
+
+    color: #fff !important;
+    font-size: 0.9rem !important;
+    font-weight: 600 !important;
+    line-height: 1.05rem !important;
+    text-align: center !important;
+
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+/* SIDEBAR PROFILE FINAL END */
+
+/* PROFILE HEADER SPACING START */
+
+/* Header gebruikt één normale afstand tot de profielkaarten */
+.profiles-lite-header {
+    margin-bottom: 0 !important;
+}
+
+.profiles-lite-header + .profiles-lite-list {
+    margin-top: 0.75em !important;
+}
+
+/* PROFILE HEADER SPACING END */
