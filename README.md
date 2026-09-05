@@ -42,7 +42,7 @@ Free accounts do not have access to Stremio's multi-profile feature.
 
 ## Homebrew Channel
 
-For rooted LG webOS TVs with [Homebrew Channel](https://github.com/webosbrew/webos-homebrew-channel):
+For [rooted (OPTIONAL NOT REQUIRED)] LG webOS TVs with [Homebrew Channel](https://github.com/webosbrew/webos-homebrew-channel):
 
 1. Open **Homebrew Channel** on your TV.
 2. Open **Settings**.
