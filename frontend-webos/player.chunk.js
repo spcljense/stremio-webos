@@ -1223,7 +1223,7 @@
                         Te(), Ce(!0)
                     }))
                 }, ht = () => {
-                    !tt() && !nt() && !V() && at()
+                    !tt() && !nt() && !V() && (!j() || Pe()) && at()
                 }, yt = () => {
                     !tt() && !nt() && !V() && we()
                 }, kt = () => {
@@ -1423,7 +1423,8 @@
                             get children() {
                                 return (0, o.a0)(o.wv, {
                                     get when() {
-                                        return (0, r.ph)((() => !(!tt() || nt())))() && !V()
+                                        // Remote "any" runs before "press"; keep controls from stealing popup focus.
+                                        return (0, r.ph)((() => !(!tt() || nt())))() && !V() && (!j() || Pe())
                                     },
                                     get children() {
                                         return (0, o.a0)(g.Gk, {

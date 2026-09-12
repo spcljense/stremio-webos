@@ -1,0 +1,51 @@
+/* Keep synopsis and cast in separate, bounded blocks. */
+.item-preview-nq13h .details-wIL6Y {
+    min-height: 0;
+}
+
+.item-preview-nq13h .description-ohb1N {
+    flex: 0 0 auto !important;
+    display: -webkit-box !important;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3 !important;
+    line-height: 2.3rem !important;
+    max-height: 6.9rem;
+    overflow: hidden !important;
+}
+
+.item-preview-nq13h.compact-2Q0Oq .description-ohb1N {
+    -webkit-line-clamp: 1 !important;
+    max-height: 2.3rem;
+}
+
+.item-preview-nq13h .cast-Iq4eA {
+    flex: 0 0 auto !important;
+    display: -webkit-box !important;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-height: 1.7rem !important;
+    max-height: 3.4rem;
+    overflow: hidden !important;
+}
+
+/* Put watch progress below posters, clear of embedded ratings. */
+.item-_uIl6 {
+    overflow: visible !important;
+}
+
+.item-_uIl6 .image-FgkBk {
+    border-radius: inherit;
+}
+
+.item-_uIl6 .progress-fSfLe {
+    top: auto !important;
+    bottom: -1.1rem !important;
+    height: 0.45rem !important;
+    left: 0.5rem !important;
+    right: 0.5rem !important;
+}
+
+/* Reserve space for progress bars and focused-card enlargement. */
+.catalog-Aq3BF .container-RzC7g {
+    height: calc(24rem + 1.5em + 2rem) !important;
+}
