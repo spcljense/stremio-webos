@@ -13,12 +13,71 @@
             }).catch(function(){});
         }
     </script>
-    <script defer src="runtime.js"></script>
+    <script defer src="runtime.js?v=skip-fix-1"></script>
     <script defer src="main.js"></script>
     <script defer src="service.js"></script>
     <script defer src="webOSTV.js"></script>
     <link rel="stylesheet" href="layout-overlap-fix.css">
-</head>
+<style>video::cue, video::-webkit-media-text-track-display { display: none !important; opacity: 0 !important; visibility: hidden !important; }
+  /* === SLEEK SOURCE SELECTION SCREEN === */
+  /* When the streams view is active, collapse the top header to a compact title bar */
+  div:has(> div[class*="streams-"]) div[class*="item-preview-"],
+  div[class*="streams-"] ~ div[class*="item-preview-"],
+  .page-jI4PO:has(.streams-ky0iI) .item-preview-nq13h {
+    height: 13vh !important;
+    padding-bottom: 0 !important;
+  }
+
+  /* Hide the redundant synopsis and cast list on the source selection screen */
+  .page-jI4PO:has(.streams-ky0iI) .description-ohb1N,
+  .page-jI4PO:has(.streams-ky0iI) .cast-Iq4eA {
+    display: none !important;
+  }
+
+  /* Make the title and meta badges fit neatly on one line */
+  .page-jI4PO:has(.streams-ky0iI) .info-container-iIxop {
+    width: 90% !important;
+    padding-top: 1.5rem !important;
+    padding-bottom: 0 !important;
+  }
+  .page-jI4PO:has(.streams-ky0iI) .title-Y5wf0 {
+    font-size: 2.6rem !important;
+    margin-bottom: 0.2rem !important;
+  }
+
+  /* Dim the background image on the source screen to free GPU texture load */
+  .page-jI4PO:has(.streams-ky0iI) .background-container-D9GP9 {
+    opacity: 0.18 !important;
+  }
+
+  /* Optimize stream cards width so 4-5 cards fit across the row instead of only 3 */
+  .streams-ky0iI .stream-rpXLF {
+    width: 25rem !important;
+    height: 8.5rem !important;
+  }
+
+  /* Expand the stream details box at the bottom for full readability */
+  .streams-ky0iI .stream-details-bgXP4 {
+    margin-top: 1rem !important;
+    padding-top: 1.5rem !important;
+    padding-bottom: 2rem !important;
+  }
+
+</style><style id="six-posters-layout">
+  /* Force exactly 6 posters horizontally across Home, Discover, and Library with 0 cutoff */
+  div[class*="item-"][class*="poster-"],
+  .item-_uIl6.poster-kFYpD {
+    width: calc((100vw - 30rem) / 6) !important;
+    height: calc(((100vw - 30rem) / 6) * (40 / 27)) !important;
+  }
+
+  /* Ensure catalog containers match the new poster dimensions */
+  div[class*="catalog-"] div[class*="container-"],
+  .catalog-Aq3BF .container-RzC7g {
+    height: auto !important;
+    min-height: calc((((100vw - 30rem) / 6) * (40 / 27)) + 3.5rem) !important;
+  }
+</style></head>
 <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>

@@ -1,20 +1,30 @@
 --- video.chunk.js
 +++ video.chunk.js
-@@ -18772,6 +18770,35 @@
+@@ -18772,6 +18770,45 @@
                  }, d.canplaythrough = function() {
                      S("buffering"), S("buffered")
                  }, d.onloadedmetadata = function() {
++                    if (d.__userSelectedAudio) { S("audioTracks"); S("selectedAudioTrackId"); S("loaded"); return; }
++                    try {
++                        if (d.textTracks) {
++                            for (var __ti = 0; __ti < d.textTracks.length; __ti++) d.textTracks[__ti].mode = "disabled";
++                        }
++                    } catch(__st) {}
 +                    if (d.audioTracks && d.audioTracks.length > 0) {
 +                        var __prefLang = null;
 +                        try { __prefLang = JSON.parse(localStorage.getItem("profile")).settings.audioLanguage; } catch(__e) {}
 +                        if (!__prefLang) {
 +                            try { __prefLang = (navigator.language || "").substring(0, 2); } catch(__e) {}
 +                        }
++                        var __lMap = { en:"eng", es:"spa", fr:"fra", de:"deu", it:"ita", pt:"por", ru:"rus", nl:"nld", pl:"pol", ja:"jpn", ko:"kor", zh:"zho", hi:"hin", tr:"tur", ar:"ara", sv:"swe", no:"nor", da:"dan", fi:"fin", el:"ell", cs:"ces", hu:"hun", ro:"ron", he:"heb", uk:"ukr", vi:"vie" };
++                        var __bToT = { fre:"fra", ger:"deu", dut:"nld", chi:"zho", gre:"ell", cze:"ces" };
++                        var __normL = function(l) { if (!l) return ""; l = String(l).toLowerCase().trim(); if (l.length === 2 && __lMap[l]) return __lMap[l]; l = l.slice(0, 3); return __bToT[l] || l; };
++                        var __isComm = function(t) { var s = (((t && t.label)||"") + " " + ((t && t.kind)||"")).toLowerCase(); return s.indexOf("commentary") !== -1 || s.indexOf("description") !== -1 || s.indexOf("audio desc") !== -1 || s.indexOf("director") !== -1; };
 +                        var __prefIdx = -1;
 +                        if (__prefLang) {
 +                            for (var __ai = 0; __ai < d.audioTracks.length; __ai++) {
 +                                var __tl = d.audioTracks[__ai].language || "";
-+                                if (__tl === __prefLang || __tl.substring(0, 2) === __prefLang.substring(0, 2)) {
++                                if (!__isComm(d.audioTracks[__ai]) && __normL(__tl) === __normL(__prefLang)) {
 +                                    __prefIdx = __ai; break;
 +                                }
 +                            }
@@ -45,7 +55,7 @@
                                  return Object.freeze({
                                      id: "EMBEDDED_" + String(e.id),
                                      lang: "string" == typeof e.lang && e.lang.length > 0 ? e.lang : "string" == typeof e.name && e.name.length > 0 ? e.name : String(e.id),
-@@ -18866,9 +18893,32 @@
+@@ -18866,9 +18893,33 @@
                                      origin: "EMBEDDED",
                                      embedded: !0
                                  })
@@ -60,6 +70,7 @@
 +                                    __out.push(Object.freeze({
 +                                        id: "EMBEDDED_" + String(__i),
 +                                        lang: __lang || String(__i),
++                                        nativeIndex: __i,
 +                                        label: __label,
 +                                        origin: "EMBEDDED",
 +                                        embedded: !0
@@ -80,7 +91,7 @@
                          case "volume":
                              return g || null === d.volume || !isFinite(d.volume) ? null : Math.floor(100 * d.volume);
                          case "muted":
-@@ -19003,6 +19053,44 @@
+@@ -19003,6 +19053,45 @@
                                                  return e.id === t
                                              }));
                                              h.audioTrack = a ? parseInt(a.id.split("_").pop(), 10) : -1, a && (S("selectedAudioTrackId"), f.emit("audioTrackLoaded", a))
@@ -91,6 +102,7 @@
 +                                            // the original track once playback has started. Pausing,
 +                                            // resetting src, and seeking back forces the pipeline to
 +                                            // re-evaluate which track to decode.
++                                            d.__userSelectedAudio = true;
 +                                            var __idx = parseInt(t.split("_").pop(), 10);
 +                                            if (__idx >= 0 && __idx < d.audioTracks.length) {
 +                                                for (var __k = 0; __k < d.audioTracks.length; __k++) d.audioTracks[__k].enabled = (__k === __idx);
@@ -125,13 +137,14 @@
                                          }
                                          break;
                                      case "volume":
-@@ -21049,7 +21049,68 @@
+@@ -21049,8 +21049,76 @@
                      G("buffering"), G("buffered")
                  }, A.onloadeddata = function() {
                      G("buffering"), G("buffered")
 -                }, A.onloadedmetadata = function() {
 +                }, A.audioTracks && A.audioTracks.addEventListener && A.audioTracks.addEventListener("addtrack", function() {
-+                setTimeout(function() {
++                clearTimeout(A.__audioDebounceTimer);
++                A.__audioDebounceTimer = setTimeout(function() {
 +                    if (A.audioTracks && A.audioTracks.length > 0) {
 +                        T = [];
 +                        Array.from(A.audioTracks).forEach(function(e, t) {
@@ -141,6 +154,7 @@
 +                                label: e.label || null,
 +                                origin: "EMBEDDED",
 +                                embedded: !0,
++                                nativeIndex: t,
 +                                mode: e.enabled ? "showing" : "disabled"
 +                            });
 +                            if (e.enabled) v = "EMBEDDED_" + t;
@@ -173,7 +187,7 @@
 +                        if (prefLang) {
 +                            for (var ai = 0; ai < A.audioTracks.length; ai++) {
 +                                var tl = A.audioTracks[ai].language || "";
-+                                if (tl === prefLang || tl.substring(0,2) === prefLang.substring(0,2)) {
++                                if ((typeof __isComm === "function" ? !__isComm(A.audioTracks[ai]) : true) && (typeof __normL === "function" ? __normL(tl) === __normL(prefLang) : tl === prefLang)) {
 +                                    prefIdx = ai; break;
 +                                }
 +                            }
@@ -191,6 +205,11 @@
 +                    }
 +                }, 100);
 +            });
++            try {
++                if (A.textTracks) {
++                    for (var _ati = 0; _ati < A.textTracks.length; _ati++) A.textTracks[_ati].mode = "disabled";
++                }
++            } catch(__sta) {}
 +            A.onloadedmetadata = function() {
                      G("buffering"), G("buffered"), V("time", C)
                  }, A.onvolumechange = function() {

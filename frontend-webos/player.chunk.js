@@ -1092,6 +1092,17 @@
                     const {
                         t: t
                     } = (0, u.B)();
+                    // Handle Down before spatial navigation: hidden controls have no target.
+                    const revealControls = event => {
+                        if (event.keyCode !== 40 && event.keyCode !== 29461) return;
+                        const focused = document.querySelector("[focused]");
+                        if (!focused || !focused.closest("." + ce["intro-outro-popup"])) return;
+                        event.preventDefault();
+                        event.stopImmediatePropagation();
+                        e.onControls();
+                    };
+                    (0, o.Rc)(() => document.addEventListener("keydown", revealControls, true));
+                    (0, o.Ki)(() => document.removeEventListener("keydown", revealControls, true));
                     return (0, o.a0)(g.Gk, {
                         get class() {
                             return ce["intro-outro-popup"]
@@ -1137,7 +1148,7 @@
                     ctx: w,
                     player: T,
                     streamingServer: A
-                } = (0, p.gK)(), C = f(), [P, E, I] = (0, b.zD)(), [O, H, Y] = (0, b.zD)(), [N, R, L] = (0, b.zD)(), [D, U, M] = (0, b.zD)(), [V, $, _] = (0, b.zD)(), [j, G, B] = (0, b.zD)(), [J, K, q] = (0, b.zD)(), [W, ee, te] = (0, b.zD)(), [re, oe, le] = (0, b.zD)(), [ae, ie, ue] = (0, b.zD)(), [de, ce] = (0, o.n5)(!1), [be, me] = (0, o.n5)(!1), [fe, ve] = (0, o.n5)(!1), [he, ye] = (0, o.n5)(!1), [ke, Se] = (0, o.n5)(null), [xe, we, Te] = (0, b.zD)(!1), [Ae, Ce] = (0, o.n5)(!1), [Pe, Ee] = (0, o.n5)(!1), [Ie, Oe] = (0, o.n5)("intro"), {
+                } = (0, p.gK)(), C = f(), [P, E, I] = (0, b.zD)(), [O, H, Y] = (0, b.zD)(), [N, R, L] = (0, b.zD)(), [D, U, M] = (0, b.zD)(), [V, $, _] = (0, b.zD)(), [j, G, B] = (0, b.zD)(), [J, K, q] = (0, b.zD)(), [W, ee, te] = (0, b.zD)(), [re, oe, le] = (0, b.zD)(), [ae, ie, ue] = (0, b.zD)(), [de, ce] = (0, o.n5)(!1), [be, me] = (0, o.n5)(!1), [fe, ve] = (0, o.n5)(!1), [he, ye] = (0, o.n5)(!1), [ke, Se] = (0, o.n5)(null), [xe, we, Te] = (0, b.zD)(!1), [Ae, Ce] = (0, o.n5)(!1), [Pe, Ee] = (0, o.n5)(!1), [skipControls, setSkipControls] = (0, o.n5)(!1), [pendingSkip, setPendingSkip] = (0, o.n5)(null), [Ie, Oe] = (0, o.n5)("intro"), {
                     stream: He,
                     videoParams: Ye,
                     paused: Ne,
@@ -1207,21 +1218,27 @@
                         y.size() > 2 && await y.back(), y.navigate(null == t ? void 0 : t.metaDetailsStreams, !0), y.navigate(null == t ? void 0 : t.player)
                     } else y.back()
                 }, mt = () => {
-                    const e = T.state().introOutro;
-                    if (null !== e && null !== Le()) {
-                        var t;
-                        const r = null !== (t = null == e ? void 0 : e.intro.to) && void 0 !== t ? t : null;
-                        var n;
-                        if ("intro" === Ie()) st(r), we();
-                        else st(null !== (n = Le()) && void 0 !== n ? n : 0)
-                    }
-                    "outro" === Ie() && Ee(!0), B()
+                    if (pendingSkip()) return;
+                    const data = T.state().introOutro;
+                    const type = Ie();
+                    const target = type === "intro" ? data && data.intro && data.intro.to : Le();
+                    if (typeof target !== "number" || !isFinite(target) || target < 0) return;
+                    // Suppress the popup until playback confirms the seek, not just until the next time update.
+                    (0, o.vA)(() => {
+                        vt(), we(), setSkipControls(!0);
+                        setPendingSkip({ to: target, type: type });
+                        st(target), B()
+                    })
                 }, ft = () => {
                     B(), Ee(!0)
                 }, vt = () => {
                     Ce(!1), k((() => {
                         Te(), Ce(!0)
                     }))
+                }, showSkipControls = () => {
+                    (0, o.vA)(() => {
+                        vt(), we(), setSkipControls(!0)
+                    })
                 }, ht = () => {
                     !tt() && !nt() && !V() && (!j() || Pe()) && at()
                 }, yt = () => {
@@ -1232,6 +1249,26 @@
                     Ee(!0), _(), we()
                 };
                 return (0, o.EH)((() => {
+                    const request = pendingSkip();
+                    if (!request) return;
+                    const timeout = setTimeout(() => {
+                        if (pendingSkip() !== request) return;
+                        (0, o.vA)(() => {
+                            vt(), we(), setSkipControls(!0), setPendingSkip(null)
+                        });
+                        t.show({ title: "Skip unavailable", message: "The player did not reach the skip point. You can try again or use the timeline." })
+                    }, 8000);
+                    (0, o.Ki)(() => clearTimeout(timeout))
+                })), (0, o.EH)((() => {
+                    const request = pendingSkip(), time = Re();
+                    if (request && typeof time === "number" && time >= request.to) {
+                        request.type === "outro" && Ee(!0);
+                        setPendingSkip(null)
+                    }
+                })), (0, o.EH)((() => {
+                    // Offer Skip again after the controls time out; do not dismiss the segment.
+                    (!j() || (!tt() && !nt())) && setSkipControls(!1)
+                })), (0, o.EH)((() => {
                     if (T.loaded() && C.ready() && !C.loaded()) {
                         const {
                             selected: e,
@@ -1325,7 +1362,7 @@
                         s = null !== (e = null == i || null === (t = i.intro) || void 0 === t ? void 0 : t.from) && void 0 !== e ? e : null,
                         u = null !== (n = null == i || null === (r = i.intro) || void 0 === r ? void 0 : r.to) && void 0 !== n ? n : null,
                         d = null !== (o = null == i ? void 0 : i.outro) && void 0 !== o ? o : null;
-                    qe() && null !== Be() && !Pe() && null !== l && null !== a && (null !== d && l >= d || l < a && a - l <= We() ? $() : _()), null !== s && null !== u && null !== l && null !== a && (l >= s && l <= u ? (Oe("intro"), G()) : null !== d && l > s + 15e3 && l < d ? B() : null !== d && l >= d && null === Be() && !Pe() ? (Oe("outro"), G()) : B())
+                    qe() && null !== Be() && !Pe() && null !== l && null !== a && (null !== d && l >= d || l < a && a - l <= We() ? $() : _()), null !== s && null !== u && null !== l && null !== a && (l >= s && l < u ? (Oe("intro"), G()) : null !== d && l > s + 15e3 && l < d ? B() : null !== d && l >= d && null === Be() && !Pe() ? (Oe("outro"), G()) : B())
                 })), (0, o.EH)((() => {
                     const n = C.error();
                     n && !n.critical && t.show({
@@ -1424,7 +1461,7 @@
                                 return (0, o.a0)(o.wv, {
                                     get when() {
                                         // Remote "any" runs before "press"; keep controls from stealing popup focus.
-                                        return (0, r.ph)((() => !(!tt() || nt())))() && !V() && (!j() || Pe())
+                                        return (0, r.ph)((() => !(!tt() || nt())))() && !V() && (!j() || Pe() || skipControls() || pendingSkip())
                                     },
                                     get children() {
                                         return (0, o.a0)(g.Gk, {
@@ -1545,12 +1582,13 @@
                             }
                         }), (0, o.a0)(o.wv, {
                             get when() {
-                                return (0, r.ph)((() => !(!j() || Pe())))() && !V()
+                                return (0, r.ph)((() => !(!j() || Pe())))() && !V() && !skipControls() && !pendingSkip()
                             },
                             get children() {
                                 return (0, o.a0)(pe, {
                                     onSkip: mt,
                                     onDismiss: ft,
+                                    onControls: showSkipControls,
                                     get skipIntroOutroType() {
                                         return Ie()
                                     }

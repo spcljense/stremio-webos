@@ -400,7 +400,7 @@
                                     return (p ? (window.__FORCE_TRANSCODE__ = !1, Promise.resolve(!1)) : t.canPlayStream({
                                         url: r
                                     }, f)).catch((function(e) {
-                                        return console.warn("Media probe error, falling back to direct playback", e), !0
+                                        return console.warn("Media probe error, falling back to transcode", e), !1
                                     })).then((function(e) {
                                         if (e) return {
                                             mediaURL: r,
@@ -18375,10 +18375,14 @@
                             try { __prefLang = (navigator.language || "").substring(0, 2); } catch(__e) {}
                         }
                         var __prefIdx = -1;
+                        var __lMap = { en:"eng", es:"spa", fr:"fra", de:"deu", it:"ita", pt:"por", ru:"rus", nl:"nld", pl:"pol", ja:"jpn", ko:"kor", zh:"zho", hi:"hin", tr:"tur", ar:"ara", sv:"swe", no:"nor", da:"dan", fi:"fin", el:"ell", cs:"ces", hu:"hun", ro:"ron", he:"heb", uk:"ukr", vi:"vie" };
+                        var __bToT = { fre:"fra", ger:"deu", dut:"nld", chi:"zho", gre:"ell", cze:"ces" };
+                        var __normL = function(l) { if (!l) return ""; l = String(l).toLowerCase().trim(); if (l.length === 2 && __lMap[l]) return __lMap[l]; l = l.slice(0, 3); return __bToT[l] || l; };
+                        var __isComm = function(t) { var s = (((t && t.label)||"") + " " + ((t && t.kind)||"")).toLowerCase(); return s.indexOf("commentary") !== -1 || s.indexOf("description") !== -1 || s.indexOf("audio desc") !== -1 || s.indexOf("director") !== -1; };
                         if (__prefLang) {
                             for (var __ai = 0; __ai < d.audioTracks.length; __ai++) {
                                 var __tl = d.audioTracks[__ai].language || "";
-                                if (__tl === __prefLang || __tl.substring(0, 2) === __prefLang.substring(0, 2)) {
+                                if (!__isComm(d.audioTracks[__ai]) && __normL(__tl) === __normL(__prefLang)) {
                                     __prefIdx = __ai; break;
                                 }
                             }
@@ -20388,11 +20392,11 @@
                 }, A.onplaying = function() {
                     G("buffering"), G("buffered"), r || (r = !0, G("loaded"))
                 }, A.oncanplay = function() {
-                    G("buffering"), G("buffered")
+                    G("buffering"), G("buffered"), applyPendingSeek()
                 }, A.canplaythrough = function() {
                     G("buffering"), G("buffered")
                 }, A.onloadeddata = function() {
-                    G("buffering"), G("buffered")
+                    G("buffering"), G("buffered"), applyPendingSeek()
                 }, A.audioTracks && A.audioTracks.addEventListener && A.audioTracks.addEventListener("addtrack", function() {
                 setTimeout(function() {
                     if (A.audioTracks && A.audioTracks.length > 0) {
@@ -20455,7 +20459,7 @@
                 }, 100);
             });
             A.onloadedmetadata = function() {
-                    G("buffering"), G("buffered"), V("time", C)
+                    G("buffering"), G("buffered"), null !== pendingSeekTime ? applyPendingSeek() : V("time", C)
                 }, A.onvolumechange = function() {
                     G("volume"), G("muted")
                 }, A.onratechange = function() {
@@ -20472,6 +20476,7 @@
                     w = !1,
                     D = null,
                     C = null,
+                    pendingSeekTime = null,
                     x = 0,
                     _ = 100,
                     O = {
@@ -20597,15 +20602,29 @@
                     O[e] && I.emit("propChanged", e, N(e))
                 }
 
+                function applyPendingSeek() {
+                    if (w || null === D || null === pendingSeekTime || A.readyState < A.HAVE_METADATA) return;
+                    try {
+                        A.currentTime = pendingSeekTime / 1e3;
+                        pendingSeekTime = null;
+                        G("time")
+                    } catch (error) {
+                        // A transient native seek failure can be retried on the next ready event.
+                        console.warn("WebOsVideo: seek deferred until media is ready", error)
+                    }
+                }
+
                 function V(e, t) {
                     switch (e) {
                         case "paused":
                             null !== D && (t ? A.pause() : A.play());
                             break;
                         case "time":
-                            if (null !== D && A.readyState >= A.HAVE_METADATA && null !== t && isFinite(t)) try {
-                                A.currentTime = parseInt(t, 10) / 1e3, G("time")
-                            } catch (e) {}
+                            if (null !== D && null !== t && isFinite(t)) {
+                                // Keep the latest request until metadata is ready; do not drop Skip Intro.
+                                pendingSeekTime = Math.max(0, parseInt(t, 10));
+                                applyPendingSeek()
+                            }
                             break;
                         case "selectedSubtitlesTrackId":
                             if (A.mediaId && null !== D && 0 === (t || "").indexOf("EMBEDDED_")) {
@@ -20762,7 +20781,7 @@
                     switch (e) {
                         case "load":
                             if (r && r.stream && "string" == typeof r.stream.url) {
-                                D = r.stream, C = r.time, G("stream"), A.autoplay = "boolean" != typeof r.autoplay || r.autoplay, G("loaded"), G("paused"), G("time"), G("duration"), G("buffering"), G("buffered"), G("subtitlesTracks"), G("selectedSubtitlesTrackId"), G("audioTracks"), G("selectedAudioTrackId");
+                                pendingSeekTime = null, D = r.stream, C = r.time, G("stream"), A.autoplay = "boolean" != typeof r.autoplay || r.autoplay, G("loaded"), G("paused"), G("time"), G("duration"), G("buffering"), G("buffered"), G("subtitlesTracks"), G("selectedSubtitlesTrackId"), G("audioTracks"), G("selectedAudioTrackId");
                                 var n = 0;
                                 A.src = D.url, i = function() {
                                     try {
@@ -20781,7 +20800,7 @@
                             }));
                             break;
                         case "unload":
-                            D = null, C = null, Array.from(A.textTracks).forEach((function(e) {
+                            pendingSeekTime = null, D = null, C = null, Array.from(A.textTracks).forEach((function(e) {
                                 e.oncuechange = null
                             })), A.removeAttribute("src"), A.load(), G("stream"), G("paused"), G("time"), G("duration"), G("buffering"), G("buffered"), G("subtitlesTracks"), G("selectedSubtitlesTrackId"), G("audioTracks"), G("selectedAudioTrackId");
                             break;

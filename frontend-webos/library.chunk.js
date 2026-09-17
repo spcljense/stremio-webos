@@ -71,7 +71,7 @@
                         pages: m
                     } = (0, d.Pj)(), [p, v] = (0, l.n5)((null !== (f = h().type) && void 0 !== f ? f : u().sort) && null !== (y = null === (L = m.getCache(k)) || void 0 === L ? void 0 : L.item) && void 0 !== y ? y : 0);
                     var f, y, L;
-                    const [rowIndex, setRowIndex] = (0, l.n5)(Math.floor((p() || 0) / 7)), [N, x] = (0, l.n5)(null), [J, w, B] = (0, c.zD)(), A = g(b), rowFocus = e => {
+                    const [rowIndex, setRowIndex] = (0, l.n5)(Math.floor((p() || 0) / 6)), [N, x] = (0, l.n5)(null), [J, w, B] = (0, c.zD)(), A = g(b), rowFocus = e => {
                         setRowIndex(e)
                     }, S = e => {
                         n(e)
@@ -194,22 +194,22 @@
                                             }), (0, l.a0)(l.jK, {
                                                 get each() {
                                                     return Array.from({
-                                                        length: Math.ceil(b.catalog().length / 7)
+                                                        length: Math.ceil(b.catalog().length / 6)
                                                     }, ((e, n) => n))
                                                 },
                                                 children: (e, n) => {
-                                                    const t = 7 * e();
+                                                    const t = 6 * e();
                                                     return (0, l.a0)(s.WC, {
                                                         get catalog() {
                                                             return {
-                                                                content: b.catalog().slice(t, t + 7)
+                                                                content: b.catalog().slice(t, t + 6)
                                                             }
                                                         },
                                                         index: n,
                                                         get itemIndex() {
                                                             var e;
                                                             const n = null !== (e = p()) && void 0 !== e ? e : 0;
-                                                            return n >= t && n < t + 7 ? n - t : 0
+                                                            return n >= t && n < t + 6 ? n - t : 0
                                                         },
                                                         get autoFocus() {
                                                             return rowIndex() === n

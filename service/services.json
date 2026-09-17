@@ -1,1 +1,9 @@
-{"id":"io.strem.webos.server","description":"Stremio Server","services":[{"name":"io.strem.webos.server"}]}
+{
+  "id": "io.strem.webos.server",
+  "description": "Stremio Background Service",
+  "services": [
+    {
+      "name": "io.strem.webos.server"
+    }
+  ]
+}

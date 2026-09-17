@@ -1,13 +1,4 @@
-// srt-ass.js — convert an external subtitle (SRT, incl. SRT carrying inline
-// {\anN} positioning tags) into ASS/SSA so it can render through our JASSUB
-// path instead of the webOS player's plain-text overlay (which prints ASS
-// override tags literally). Already-ASS input passes through unchanged.
-//
-// Preserves ONLY {\an1}..{\an9} alignment overrides (the common "sign at top"
-// case); other raw brace overrides are dropped so a stray/garbled tag can't
-// make libass mis-parse or hide a line. <i>/<b>/<u> map to the ASS toggles.
-
-// H:MM:SS.cc from "HH:MM:SS,mmm" (or '.'). Centisecond rounding with carry.
+// srt-ass.js — Robust SRT/WebVTT to ASS converter
 function toAssTime(t) {
     var m = /(\d{1,2}):(\d{2}):(\d{2})[,.](\d{1,3})/.exec(t);
     if (!m) return null;
@@ -18,32 +9,37 @@ function toAssTime(t) {
     if (mm >= 60) { mm -= 60; hh += 1; }
     return hh + ':' + String(mm).padStart(2, '0') + ':' + String(ss).padStart(2, '0') + '.' + String(cs).padStart(2, '0');
 }
-function assCs(t) { // seconds as a number, for the >= start+0.01 guard
+
+function assCs(t) {
     var m = /(\d{1,2}):(\d{2}):(\d{2})[,.](\d{1,3})/.exec(t);
     if (!m) return NaN;
     return (+m[1]) * 3600 + (+m[2]) * 60 + (+m[3]) + Math.round(parseInt((m[4] + '00').slice(0, 3), 10) / 10) / 100;
 }
 
 function convText(t) {
+    if (!t) return '';
     t = t.replace(/\r/g, '');
-    // keep {\an1..9}; drop any other {...} override block
+
+    // Preserve {\an1..9} alignment tags, drop any other override block
     t = t.replace(/\{([^}]*)\}/g, function (m, inner) {
         var s = inner.trim();
         return /^\\an[1-9]$/.test(s) ? '{' + s + '}' : '';
     });
-    // html styling -> ass toggles; strip any other html but keep its text
+
+    // Convert HTML formatting to ASS tags
     t = t.replace(/<\s*i\s*>/gi, '{\\i1}').replace(/<\s*\/\s*i\s*>/gi, '{\\i0}')
         .replace(/<\s*b\s*>/gi, '{\\b1}').replace(/<\s*\/\s*b\s*>/gi, '{\\b0}')
         .replace(/<\s*u\s*>/gi, '{\\u1}').replace(/<\s*\/\s*u\s*>/gi, '{\\u0}')
-        .replace(/<[^>]+>/g, '');
-    t = t.replace(/\n/g, '\\N');   // SRT hard line break -> ASS \N
-    t = t.replace(/^(?:\\N)+/, '').replace(/(?:\\N)+$/, '');   // no leading/trailing breaks
+        // Safely strip HTML tags without wiping out mathematical "<" or "<3"
+        .replace(/<\/?(?:font|span|p|div|color|size|b|i|u)[^>]*>/gi, '')
+        .replace(/<[^>]{1,50}>/g, '');
+
+    // Convert hard breaks to ASS \N
+    t = t.replace(/\n+/g, '\\N');
+    t = t.replace(/^(?:\\N)+/, '').replace(/(?:\\N)+$/, '');
     return t.trim();
 }
 
-// Shared plain-text subtitle header. Embedded S_TEXT/UTF8 blocks already carry
-// timing in Matroska, so the streaming demuxer reuses this header + convText()
-// without round-tripping through a synthetic SRT document.
 function assHeader(resX, resY) {
     var W = resX && isFinite(resX) ? Math.round(resX) : 1920;
     var H = resY && isFinite(resY) ? Math.round(resY) : 1080;
@@ -56,32 +52,73 @@ function assHeader(resX, resY) {
         + '[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n';
 }
 
-// resX/resY: script resolution (match the video; default 1920x1080). Style
-// scales with resY so it looks right at any resolution.
 function srtToAss(src, resX, resY) {
     if (!src) return '';
-    src = src.replace(/^﻿/, '');                       // BOM
-    if (/^\s*\[Script Info\]/.test(src) || /\n\s*Dialogue\s*:/.test(src)) return src;  // already ASS
+    // Strip UTF-8 BOM
+    src = src.replace(/^\uFEFF/, '').replace(/^﻿/, '');
+
+    // Pass through if already ASS/SSA
+    if (/^\s*\[Script Info\]/.test(src) || /\n\s*Dialogue\s*:/.test(src)) return src;
+
     var head = assHeader(resX, resY);
     var out = [];
-    var blocks = src.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split(/\n[ \t]*\n/);
-    for (var i = 0; i < blocks.length; i++) {
-        var lines = blocks[i].split('\n');
-        while (lines.length && !lines[0].trim()) lines.shift();
-        if (lines.length && /^\d+$/.test(lines[0].trim())) lines.shift();   // index line
-        if (!lines.length) continue;
-        var tm = /(\d{1,2}:\d{2}:\d{2}[,.]\d{1,3})\s*-->\s*(\d{1,2}:\d{2}:\d{2}[,.]\d{1,3})/.exec(lines[0]);
-        if (!tm) continue;
-        var s = toAssTime(tm[1]), e = toAssTime(tm[2]);
-        if (!s || !e) continue;
-        if (assCs(tm[2]) < assCs(tm[1]) + 0.01) {           // ensure end >= start + 1cs (avoid collapse)
-            var sec = assCs(tm[1]) + 0.06, hh = Math.floor(sec / 3600), mm = Math.floor((sec % 3600) / 60), ss = sec % 60;
-            e = hh + ':' + String(mm).padStart(2, '0') + ':' + ss.toFixed(2).padStart(5, '0');
+
+    // Normalize line endings to \n
+    var rawLines = src.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+
+    var timeRegex = /(\d{1,2}:\d{2}:\d{2}[,.]\d{1,3})\s*-->\s*(\d{1,2}:\d{2}:\d{2}[,.]\d{1,3})/;
+    var currentCue = null;
+    var textLines = [];
+
+    function pushCue() {
+        if (!currentCue || !textLines.length) return;
+        var body = convText(textLines.join('\n'));
+        if (body) {
+            out.push('Dialogue: 0,' + currentCue.s + ',' + currentCue.e + ',Default,,0,0,0,,' + body);
         }
-        var body = convText(lines.slice(1).join('\n'));
-        if (!body) continue;
-        out.push('Dialogue: 0,' + s + ',' + e + ',Default,,0,0,0,,' + body);
+        currentCue = null;
+        textLines = [];
     }
+
+    for (var i = 0; i < rawLines.length; i++) {
+        var line = rawLines[i];
+        var trimmed = line.trim();
+
+        var tm = timeRegex.exec(trimmed);
+        if (tm) {
+            pushCue();
+
+            var s = toAssTime(tm[1]);
+            var e = toAssTime(tm[2]);
+            if (s && e) {
+                var startSec = assCs(tm[1]);
+                var endSec = assCs(tm[2]);
+                // Readability floor: ensure cues stay visible for at least 1.2s
+                if (endSec < startSec + 1.2) {
+                    var sec = startSec + Math.max(1.2, Math.min(3.5, trimmed.length * 0.06));
+                    var hh = Math.floor(sec / 3600);
+                    var mm = Math.floor((sec % 3600) / 60);
+                    var ss = sec % 60;
+                    e = hh + ':' + String(mm).padStart(2, '0') + ':' + ss.toFixed(2).padStart(5, '0');
+                }
+                currentCue = { s: s, e: e };
+            }
+            continue;
+        }
+
+        // Collect dialogue text (ignoring standalone numeric index lines between cues)
+        if (currentCue) {
+            if (/^\d+$/.test(trimmed) && i + 1 < rawLines.length && timeRegex.test(rawLines[i + 1])) {
+                continue;
+            }
+            if (trimmed) {
+                textLines.push(trimmed);
+            }
+        }
+    }
+
+    pushCue();
+
     return head + out.join('\n') + '\n';
 }
 
