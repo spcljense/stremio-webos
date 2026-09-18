@@ -144,7 +144,7 @@ function proxyToStreaming(req, res, retryCount) {
     });
 
     // Abort upstream connection if incoming request terminates
-    req.on('close', function() {
+    req.on('aborted', function() {
         proxyReq.abort();
     });
 

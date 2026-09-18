@@ -1,6 +1,6 @@
 {
   "id": "io.strem.webos",
-  "version": "1.1.3",
+  "version": "1.1.4",
   "vendor": "Smart Code OOD",
   "type": "web",
   "main": "index.html",

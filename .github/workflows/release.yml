@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   release:
-    if: github.ref != 'refs/tags/stremio-webos-1.1.3'
+    if: github.ref != 'refs/tags/stremio-webos-1.1.4'
     runs-on: ubuntu-latest
 
     steps:
