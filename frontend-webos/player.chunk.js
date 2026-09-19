@@ -43,7 +43,7 @@
                 o = n.n(r),
                 l = n(3645),
                 a = n.n(l)()(o());
-            a.push([e.id, ".seekbar-oerpP {\n  position: relative;\n  height: 2rem;\n  width: 100%;\n}\n.seekbar-oerpP .track-Xfs0A {\n  position: relative;\n  top: calc((2rem / 2) - (0.6rem / 2));\n  height: 0.6rem;\n  border-radius: 1em;\n  background-color: hsla(0, 0%, 100%, 0.1);\n  overflow: hidden;\n}\n.seekbar-oerpP .track-Xfs0A .inner-vZhnL {\n  position: absolute;\n  height: 100%;\n  width: 0;\n}\n.seekbar-oerpP .track-Xfs0A .inner-vZhnL.before-LMEzS {\n  z-index: 0;\n  background-color: hsla(0, 0%, 100%, 0.1);\n}\n.seekbar-oerpP .track-Xfs0A .inner-vZhnL.after-gTKS0 {\n  z-index: 1;\n  background-color: #7b5bf5;\n}\n.seekbar-oerpP .thumb-PyYAw {\n  z-index: 1;\n  position: absolute;\n  top: calc((2rem / 2) - (1.5rem / 2));\n  height: 1.5rem;\n  width: 1.5rem;\n  border-radius: 100%;\n  transform: translateX(-50%);\n  transition: background-color 0.1s ease-in-out;\n}\n.seekbar-oerpP .thumb-PyYAw:after {\n  content: '';\n  position: absolute;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  height: 100%;\n  width: 100%;\n  border-radius: 100%;\n  box-shadow: 0 0 0 0.25rem #7b5bf5 inset;\n  filter: brightness(130%);\n  opacity: 0;\n  transition: opacity 0.1s ease-in-out;\n}\n.seekbar-oerpP[focused] .thumb-PyYAw,\n.seekbar-oerpP:hover .thumb-PyYAw {\n  background-color: #7b5bf5;\n}\n.seekbar-oerpP[focused] .thumb-PyYAw:after,\n.seekbar-oerpP:hover .thumb-PyYAw:after {\n  opacity: 1;\n}\n", ""]), a.locals = {
+            a.push([e.id, ".seekbar-oerpP {\n  position: relative;\n  height: 2rem;\n  width: 100%;\n}\n.seekbar-oerpP .track-Xfs0A {\n  position: relative;\n  top: calc((2rem / 2) - (0.6rem / 2));\n  height: 0.6rem;\n  border-radius: 1em;\n  background-color: hsla(0, 0%, 100%, 0.1);\n  overflow: hidden;\n}\n.seekbar-oerpP .track-Xfs0A .inner-vZhnL {\n  position: absolute;\n  height: 100%;\n  width: 0;\n}\n.seekbar-oerpP .track-Xfs0A .inner-vZhnL.before-LMEzS {\n  z-index: 0;\n  background-color: hsla(0, 0%, 100%, 0.1);\n}\n.seekbar-oerpP .track-Xfs0A .inner-vZhnL.after-gTKS0 {\n  z-index: 1;\n  background-color: #7b5bf5;\n}\n.seekbar-oerpP .track-Xfs0A .skip-segment-markers {\n  z-index: 2;\n  position: absolute;\n  inset: 0;\n  pointer-events: none;\n}\n.seekbar-oerpP .track-Xfs0A .skip-segment-marker {\n  position: absolute;\n  top: 0;\n  bottom: 0;\n  min-width: 0.25rem;\n  border-left: 0.1rem solid rgba(12, 12, 16, 0.65);\n  border-right: 0.1rem solid rgba(12, 12, 16, 0.65);\n  opacity: 0.9;\n}\n.seekbar-oerpP .thumb-PyYAw {\n  z-index: 3;\n  position: absolute;\n  top: calc((2rem / 2) - (1.5rem / 2));\n  height: 1.5rem;\n  width: 1.5rem;\n  border-radius: 100%;\n  transform: translateX(-50%);\n  transition: background-color 0.1s ease-in-out;\n}\n.seekbar-oerpP .thumb-PyYAw:after {\n  content: '';\n  position: absolute;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  height: 100%;\n  width: 100%;\n  border-radius: 100%;\n  box-shadow: 0 0 0 0.25rem #7b5bf5 inset;\n  filter: brightness(130%);\n  opacity: 0;\n  transition: opacity 0.1s ease-in-out;\n}\n.seekbar-oerpP[focused] .thumb-PyYAw,\n.seekbar-oerpP:hover .thumb-PyYAw {\n  background-color: #7b5bf5;\n}\n.seekbar-oerpP[focused] .thumb-PyYAw:after,\n.seekbar-oerpP:hover .thumb-PyYAw:after {\n  opacity: 1;\n}\n", ""]), a.locals = {
                 seekbar: "seekbar-oerpP",
                 track: "track-Xfs0A",
                 inner: "inner-vZhnL",
@@ -860,7 +860,18 @@
             V.styleTagTransform = N(), V.setAttributes = I(), V.insert = P().bind(null, "head"), V.domAPI = A(), V.insertStyleElement = H();
             w()(M.A, V);
             const $ = M.A && M.A.locals ? M.A.locals : void 0;
-            var _ = (0, r.vs)("<div><div><div></div><div></div></div><div>");
+            var _ = (0, r.vs)("<div><div><div></div><div></div><div></div></div><div></div><div>");
+            const skipSegmentColors = {
+                    intro: "#2ed573",
+                    recap: "#f5c518",
+                    outro: "#ff6b6b",
+                    preview: "#38bdf8"
+                }, skipSegmentLabels = {
+                    intro: "Intro",
+                    recap: "Recap",
+                    outro: "Outro",
+                    preview: "Preview"
+                };
             const j = (e, t, n) => Math.min(Math.max(e, t), n),
                 G = (e, t, n) => null !== e && null !== t && null !== n ? j(parseFloat((e / n * 100).toFixed(2)), t, n) : 0,
                 X = e => {
@@ -915,7 +926,7 @@
                         e.autoFocus && l(), a.on("seekPrev", w), a.on("seekNext", T)
                     })), (0, o.Ki)((() => {
                         a.off("seekPrev", w), a.off("seekNext", T)
-                    })), P = _(), E = P.firstChild, I = E.firstChild, O = I.nextSibling, H = E.nextSibling, P.addEventListener("blur", C), P.addEventListener("focus", A), P.addEventListener("press", k), P.$$click = y, (0, r.Yx)(v, P), (0, o.gb)((t => {
+                    })), P = _(), E = P.firstChild, I = E.firstChild, O = I.nextSibling, markerLayer = O.nextSibling, H = E.nextSibling, legend = H.nextSibling, P.addEventListener("blur", C), P.addEventListener("focus", A), P.addEventListener("press", k), P.$$click = y, markerLayer.className = "skip-segment-markers", markerLayer.style.top = "0", markerLayer.style.right = "0", markerLayer.style.bottom = "0", markerLayer.style.left = "0", legend.className = "skip-segment-legend", legend.style.position = "absolute", legend.style.top = "2rem", legend.style.left = "0", legend.style.right = "0", legend.style.display = "flex", legend.style.flexWrap = "wrap", legend.style.gap = "0.8rem", legend.style.fontSize = "0.85rem", legend.style.color = "rgba(255,255,255,0.78)", (0, r.Yx)(v, P), (0, o.gb)((t => {
                         var n = F()(e.class, $.seekbar),
                             o = $.track,
                             l = F()($.inner, $.before),
@@ -923,7 +934,46 @@
                             i = F()($.inner, $.after),
                             s = `${m()}%`,
                             u = $.thumb,
-                            d = `${m()}%`;
+                            d = `${m()}%`,
+                            c = (e.segments || []).map((segment => `${segment.type}:${segment.from}:${segment.to}`)).join("|");
+                        if (c !== t.m) {
+                            markerLayer.textContent = "";
+                            legend.textContent = "";
+                            (e.segments || []).forEach((segment => {
+                                if (!e.duration || !skipSegmentColors[segment.type]) return;
+                                const start = G(segment.from, 0, e.duration), end = G(segment.to, 0, e.duration), marker = document.createElement("span"), legendItem = document.createElement("span"), swatch = document.createElement("span");
+                                if (!(end > start)) return;
+                                marker.className = "skip-segment-marker";
+                                marker.setAttribute("data-segment-type", segment.type);
+                                marker.setAttribute("title", skipSegmentLabels[segment.type]);
+                                marker.style.left = `${start}%`;
+                                marker.style.width = `${end-start}%`;
+                                marker.style.backgroundColor = skipSegmentColors[segment.type];
+                                markerLayer.appendChild(marker);
+                                legendItem.className = "skip-segment-legend-item";
+                                legendItem.setAttribute("data-segment-type", segment.type);
+                                legendItem.style.whiteSpace = "nowrap";
+                                legendItem.style.marginRight = "0.8rem";
+                                swatch.style.display = "inline-block";
+                                swatch.style.width = "0.65rem";
+                                swatch.style.height = "0.65rem";
+                                swatch.style.marginRight = "0.3rem";
+                                swatch.style.borderRadius = "0.15rem";
+                                swatch.style.backgroundColor = skipSegmentColors[segment.type];
+                                legendItem.appendChild(swatch);
+                                legendItem.appendChild(document.createTextNode(`${skipSegmentLabels[segment.type]} ${Z(segment.from)}–${Z(segment.to)}`));
+                                legend.appendChild(legendItem)
+                            }));
+                            if ((e.segments || []).some((segment => "skipdb" === segment.source))) {
+                                const attribution = document.createElement("span");
+                                attribution.className = "skip-segment-attribution";
+                                attribution.style.opacity = "0.65";
+                                attribution.textContent = "Segment data: SkipDB";
+                                legend.appendChild(attribution)
+                            }
+                            P.style.height = (e.segments || []).length ? "4rem" : "2rem";
+                            t.m = c
+                        }
                         return n !== t.e && (0, r.s7)(P, t.e = n), o !== t.t && (0, r.s7)(E, t.t = o), l !== t.a && (0, r.s7)(I, t.a = l), a !== t.o && (null != (t.o = a) ? I.style.setProperty("width", a) : I.style.removeProperty("width")), i !== t.i && (0, r.s7)(O, t.i = i), s !== t.n && (null != (t.n = s) ? O.style.setProperty("width", s) : O.style.removeProperty("width")), u !== t.s && (0, r.s7)(H, t.s = u), d !== t.h && (null != (t.h = d) ? H.style.setProperty("left", d) : H.style.removeProperty("left")), t
                     }), {
                         e: void 0,
@@ -933,9 +983,10 @@
                         i: void 0,
                         n: void 0,
                         s: void 0,
-                        h: void 0
+                        h: void 0,
+                        m: void 0
                     }), P;
-                    var P, E, I, O, H
+                    var P, E, I, O, markerLayer, H, legend
                 };
             (0, r.z_)(["click"]);
             var B = n(7603),
@@ -1133,13 +1184,17 @@
                                     return F()(ce.button, ce.confirm)
                                 },
                                 get label() {
-                                    return t("intro" === e.skipIntroOutroType ? "PLAYER_SKIP_INTRO" : "PLAYER_SKIP_OUTRO")
+                                    return "intro" === e.skipIntroOutroType ? t("PLAYER_SKIP_INTRO") : "outro" === e.skipIntroOutroType ? t("PLAYER_SKIP_OUTRO") : "recap" === e.skipIntroOutroType ? "Skip recap" : "Skip preview"
                                 },
                                 autoFocus: !0
                             })]
                         }
                     })
-                };
+                }, skipSegmentsApi = window.StremioSkipSegments,
+                getSkipDbIdentity = skipSegmentsApi.getIdentity,
+                normalizeOfficialSegments = skipSegmentsApi.normalizeOfficial,
+                mergeSkipSegments = skipSegmentsApi.merge,
+                fetchSkipDbSegments = skipSegmentsApi.fetchSegments;
             var ge = (0, r.vs)("<div>");
             const be = () => {
                 const {
@@ -1148,7 +1203,7 @@
                     ctx: w,
                     player: T,
                     streamingServer: A
-                } = (0, p.gK)(), C = f(), [P, E, I] = (0, b.zD)(), [O, H, Y] = (0, b.zD)(), [N, R, L] = (0, b.zD)(), [D, U, M] = (0, b.zD)(), [V, $, _] = (0, b.zD)(), [j, G, B] = (0, b.zD)(), [J, K, q] = (0, b.zD)(), [W, ee, te] = (0, b.zD)(), [re, oe, le] = (0, b.zD)(), [ae, ie, ue] = (0, b.zD)(), [de, ce] = (0, o.n5)(!1), [be, me] = (0, o.n5)(!1), [fe, ve] = (0, o.n5)(!1), [he, ye] = (0, o.n5)(!1), [ke, Se] = (0, o.n5)(null), [xe, we, Te] = (0, b.zD)(!1), [Ae, Ce] = (0, o.n5)(!1), [Pe, Ee] = (0, o.n5)(!1), [skipControls, setSkipControls] = (0, o.n5)(!1), [pendingSkip, setPendingSkip] = (0, o.n5)(null), [Ie, Oe] = (0, o.n5)("intro"), {
+                } = (0, p.gK)(), C = f(), [P, E, I] = (0, b.zD)(), [O, H, Y] = (0, b.zD)(), [N, R, L] = (0, b.zD)(), [D, U, M] = (0, b.zD)(), [V, $, _] = (0, b.zD)(), [j, G, B] = (0, b.zD)(), [J, K, q] = (0, b.zD)(), [W, ee, te] = (0, b.zD)(), [re, oe, le] = (0, b.zD)(), [ae, ie, ue] = (0, b.zD)(), [de, ce] = (0, o.n5)(!1), [be, me] = (0, o.n5)(!1), [fe, ve] = (0, o.n5)(!1), [he, ye] = (0, o.n5)(!1), [ke, Se] = (0, o.n5)(null), [xe, we, Te] = (0, b.zD)(!1), [Ae, Ce] = (0, o.n5)(!1), [Pe, Ee] = (0, o.n5)(!1), [skipControls, setSkipControls] = (0, o.n5)(!1), [pendingSkip, setPendingSkip] = (0, o.n5)(null), [skipDbSegments, setSkipDbSegments] = (0, o.n5)([]), [skipTarget, setSkipTarget] = (0, o.n5)(null), [Ie, Oe] = (0, o.n5)("intro"), {
                     stream: He,
                     videoParams: Ye,
                     paused: Ne,
@@ -1187,7 +1242,7 @@
                 }, tt = () => et() || Ne() || De() || !Ae(), nt = () => P() || O() || N() || D() || J() || W() || re() || ae(), rt = () => qe() && Be(), ot = () => {
                     var e;
                     return `${Z(null!==(e=ke())&&void 0!==e?e:Re())} / ${Z(Le())}`
-                }, lt = () => {
+                }, mergedSkipSegments = (0, o.To)((() => mergeSkipSegments(normalizeOfficialSegments(T.state().introOutro, Le()), skipDbSegments()))), lt = () => {
                     C.setProp("paused", !1)
                 }, at = () => {
                     C.setProp("paused", !0)
@@ -1219,9 +1274,8 @@
                     } else y.back()
                 }, mt = () => {
                     if (pendingSkip()) return;
-                    const data = T.state().introOutro;
                     const type = Ie();
-                    const target = type === "intro" ? data && data.intro && data.intro.to : Le();
+                    const target = skipTarget();
                     if (typeof target !== "number" || !isFinite(target) || target < 0) return;
                     // Suppress the popup until playback confirms the seek, not just until the next time update.
                     (0, o.vA)(() => {
@@ -1247,6 +1301,9 @@
                     I(), Y(), L(), M(), q(), te(), le()
                 }, St = () => {
                     Ee(!0), _(), we()
+                }, skipDbRequestState = {
+                    key: "",
+                    id: 0
                 };
                 return (0, o.EH)((() => {
                     const request = pendingSkip();
@@ -1262,12 +1319,23 @@
                 })), (0, o.EH)((() => {
                     const request = pendingSkip(), time = Re();
                     if (request && typeof time === "number" && time >= request.to) {
-                        request.type === "outro" && Ee(!0);
+                        request.type === "outro" && request.to >= Le() - 1e3 && Ee(!0);
                         setPendingSkip(null)
                     }
                 })), (0, o.EH)((() => {
                     // Offer Skip again after the controls time out; do not dismiss the segment.
                     (!j() || (!tt() && !nt())) && setSkipControls(!1)
+                })), (0, o.EH)((() => {
+                    const identity = getSkipDbIdentity(T.state()), duration = Le(), key = identity && Number.isFinite(duration) && duration > 0 ? `${identity.imdbId}:${identity.season||0}:${identity.episode||0}:${Math.round(duration/1e3)}` : "";
+                    if (key === skipDbRequestState.key) return;
+                    skipDbRequestState.key = key;
+                    const requestId = ++skipDbRequestState.id;
+                    setSkipDbSegments([]);
+                    identity && key && fetchSkipDbSegments(identity, duration).then((segments => {
+                        requestId === skipDbRequestState.id && setSkipDbSegments(segments)
+                    })).catch((() => {
+                        requestId === skipDbRequestState.id && setSkipDbSegments([])
+                    }))
                 })), (0, o.EH)((() => {
                     if (T.loaded() && C.ready() && !C.loaded()) {
                         const {
@@ -1355,14 +1423,10 @@
                         de() || null !== e || null !== t || (C.disableSubtitlesTracks(), ce(!0))
                     }
                 })), (0, o.EH)((() => {
-                    var e, t, n, r, o;
-                    const l = Re(),
-                        a = Le(),
-                        i = T.state().introOutro,
-                        s = null !== (e = null == i || null === (t = i.intro) || void 0 === t ? void 0 : t.from) && void 0 !== e ? e : null,
-                        u = null !== (n = null == i || null === (r = i.intro) || void 0 === r ? void 0 : r.to) && void 0 !== n ? n : null,
-                        d = null !== (o = null == i ? void 0 : i.outro) && void 0 !== o ? o : null;
-                    qe() && null !== Be() && !Pe() && null !== l && null !== a && (null !== d && l >= d || l < a && a - l <= We() ? $() : _()), null !== s && null !== u && null !== l && null !== a && (l >= s && l < u ? (Oe("intro"), G()) : null !== d && l > s + 15e3 && l < d ? B() : null !== d && l >= d && null === Be() && !Pe() ? (Oe("outro"), G()) : B())
+                    const time = Re(), duration = Le(), segments = mergedSkipSegments(), outro = segments.find((segment => "outro" === segment.type)), active = null !== time ? segments.find((segment => time >= segment.from && time < segment.to)) : null,
+                        showActive = active && !Pe() && (("outro" !== active.type && "preview" !== active.type) || null === Be());
+                    qe() && null !== Be() && !Pe() && null !== time && null !== duration && (outro && time >= outro.from || time < duration && duration - time <= We() ? $() : _());
+                    showActive ? (Oe(active.type), setSkipTarget(active.to), G()) : (setSkipTarget(null), B())
                 })), (0, o.EH)((() => {
                     const n = C.error();
                     n && !n.critical && t.show({
@@ -1394,6 +1458,7 @@
                 })), (0, o.Rc)((() => {
                     h.on("play", lt), h.on("pause", at), h.on("playPause", it), h.on("stop", bt), h.on("left", yt), h.on("right", yt), h.on("ok", ht), h.on("any", vt), window.addEventListener("mousemove", vt), vt()
                 })), (0, o.Ki)((() => {
+                    skipDbRequestState.id++;
                     C.unload(), T.unload(), h.off("play", lt), h.off("pause", at), h.off("playPause", it), h.off("stop", bt), h.off("left", yt), h.off("right", yt), h.off("ok", ht), h.off("any", vt), window.removeEventListener("mousemove", vt)
                 })), (0, o.a0)(m.YW, {
                     get class() {
@@ -1508,6 +1573,9 @@
                                                             },
                                                             get duration() {
                                                                 return Le()
+                                                            },
+                                                            get segments() {
+                                                                return mergedSkipSegments()
                                                             },
                                                             get step() {
                                                                 return Qe()

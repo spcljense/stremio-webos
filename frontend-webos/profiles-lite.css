@@ -10,7 +10,6 @@
     overflow: hidden;
     border-radius: 1rem;
     opacity: 0.55;
-    transition: width 0.1s ease-out, opacity 0.1s ease-out, background-color 0.1s ease-out;
 }
 
 .profile-lite-nav.expanded {
@@ -99,9 +98,6 @@
     border-radius: 50%;
     object-fit: cover;
 
-    transition:
-        transform 0.12s ease-out,
-        outline 0.12s ease-out;
 }
 
 .profiles-lite-button.button-FYnSC .label-M7e3J {
@@ -155,14 +151,13 @@
 
 /* Avatar blijft rond en animeert soepel */
 .profiles-lite-button.button-FYnSC .icon-vMHfQ {
-    transition: transform 0.16s ease-out !important;
     transform: scale(1);
 }
 
 /* Alleen geselecteerde avatar wordt groter */
 .profiles-lite-button.button-FYnSC[focused] .icon-vMHfQ,
 .profiles-lite-button.button-FYnSC:hover .icon-vMHfQ {
-    transform: scale(1.16);
+    transform: scale(1.30);
     outline: none !important;
     box-shadow: none !important;
 }
@@ -188,7 +183,6 @@
 .profile-lite-nav-avatar {
     border-radius: 50% !important;
     object-fit: cover !important;
-    transition: transform 0.16s ease-out !important;
     transform-origin: center center !important;
 }
 
@@ -261,7 +255,6 @@
 
     transform: scale(1);
     transform-origin: center center !important;
-    transition: transform 0.16s ease-out !important;
 }
 
 .profile-lite-nav-icon {
@@ -274,7 +267,6 @@
 
     transform: scale(1);
     transform-origin: center center !important;
-    transition: transform 0.16s ease-out !important;
 }
 
 .profile-lite-nav[focused] .profile-lite-nav-avatar,
@@ -398,9 +390,6 @@
     font-weight: 600;
     line-height: 1.75rem;
     user-select: none;
-    transition:
-        border-color 0.1s ease-out,
-        background-color 0.1s ease-out;
 }
 
 .profile-pin-key[focused],
@@ -504,3 +493,8 @@
 }
 
 /* END OFFICIAL-STYLE SIDEBAR PROFILE */
+
+/* TEST: remove navbar right-side gradient/shadow */
+.navbar-NNb1c .background-xaXYe::after {
+    display: none !important;
+}

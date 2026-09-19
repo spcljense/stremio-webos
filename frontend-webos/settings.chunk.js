@@ -382,18 +382,6 @@
                                     interfaceLanguage: t
                                 })
                             })))
-                        }, {
-                            label: "ANIMATIONS",
-                            options: [{
-                                checked: () => g.animations(),
-                                onClick: () => g.setAnimations(!g.animations())
-                            }]
-                        }, {
-                            label: "BACKGROUND_BLUR",
-                            options: [{
-                                checked: () => g.backgroundBlur(),
-                                onClick: () => g.setBackgroundBlur(!g.backgroundBlur())
-                            }]
                         }]
                     }, {
                         label: "PLAYBACK",
@@ -696,22 +684,11 @@
                                 makeToggle("Auto-Play Stream", "stremio_autoplay_best"),
                                 makeToggle("Mark Season", "stremio_mark_season"),
                                 makeToggle("Subtitle Drift Fix", "stremio_sub_drift_fix"),
-                                makeAction(function() {
-                                    return window.__get720pModeLabel ? "720p Mode: " + window.__get720pModeLabel() : "720p Mode";
-                                }, function() {
-                                    if (window.__cycle720pMode) window.__cycle720pMode();
-                                }),
                                 makeToggle("Torrent Streaming", "stremio_webtorrent_enabled"),
                                 makeToggle("Low Memory Mode", "stremio_low_memory", null, true),
                                 makeToggle("Auto-Rebuffer", "stremio_auto_rebuffer", null, true),
                                 makeToggle("Stream Stats", "stremio_stream_stats", null, true),
                                 makeToggle("Playback Warning", "stremio_playback_warning", null, true),
-                                makeAction("Playback Diagnostics", function() {
-                                    if (window.__showPlaybackDiagnostics) window.__showPlaybackDiagnostics();
-                                }),
-                                makeAction("Apply Safe Playback Mode", function() {
-                                    if (window.__applyPlaybackSafeMode) window.__applyPlaybackSafeMode();
-                                }),
                                   makeAction("Exit Stremio", function() {
                                     if (window.__exitApp) window.__exitApp(); else window.dispatchEvent(new Event("quit"));
                                 }, () => "Web" === p.name)

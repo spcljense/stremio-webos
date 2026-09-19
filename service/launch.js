@@ -168,6 +168,83 @@ function proxyToStreaming(req, res, retryCount) {
 }
 
 // Subtitle Proxy: handles redirects, memory caps, and timeouts
+/* PGS92_SUBTITLE_PROXY_BEGIN */
+function handleSubtitleVtt(req, res) {
+    var headers = {};
+
+    Object.keys(req.headers || {}).forEach(function(k) {
+        headers[k] = req.headers[k];
+    });
+
+    headers.host = '127.0.0.1:11470';
+    headers['accept-encoding'] = 'identity';
+    delete headers.connection;
+
+    var upstream = http.request({
+        hostname: '127.0.0.1',
+        port: 11470,
+        path: req.url,
+        method: req.method,
+        headers: headers
+    }, function(upstreamRes) {
+        var chunks = [];
+
+        upstreamRes.on('data', function(chunk) {
+            chunks.push(chunk);
+        });
+
+        upstreamRes.on('end', function() {
+            var body = Buffer.concat(chunks);
+
+            if ((upstreamRes.statusCode || 500) >= 200 &&
+                (upstreamRes.statusCode || 500) < 300) {
+
+                var txt = body.toString('utf8');
+
+                txt = require('./subtitle-mojibake-sanitizer.js')
+                    .sanitizeSubtitleMojibake(txt);
+
+                body = Buffer.from
+                    ? Buffer.from(txt, 'utf8')
+                    : new Buffer(txt, 'utf8');
+            }
+
+            var outHeaders = {};
+
+            Object.keys(upstreamRes.headers || {}).forEach(function(k) {
+                outHeaders[k] = upstreamRes.headers[k];
+            });
+
+            delete outHeaders['content-encoding'];
+            delete outHeaders['transfer-encoding'];
+            delete outHeaders['etag'];
+            delete outHeaders['content-md5'];
+
+            outHeaders['content-length'] = String(body.length);
+            outHeaders['content-type'] = 'text/vtt; charset=utf-8';
+
+            res.writeHead(upstreamRes.statusCode || 200, outHeaders);
+            res.end(body);
+        });
+    });
+
+    upstream.on('error', function(err) {
+        if (!res.headersSent) {
+            res.writeHead(502, {
+                'content-type': 'text/plain; charset=utf-8'
+            });
+        }
+
+        res.end(
+            'Subtitle proxy error: ' +
+            String(err && err.message || err)
+        );
+    });
+
+    req.pipe(upstream);
+}
+/* PGS92_SUBTITLE_PROXY_END */
+
 function handleExtSub(req, res) {
     var q = url.parse(req.url, true).query || {};
     var u = q.u;
@@ -264,6 +341,13 @@ function handleExtSub(req, res) {
 // Single server: static files first, then proxy to streaming server
 var server = http.createServer(function(req, res) {
     var urlPath = req.url.split('?')[0];
+
+    if (urlPath === '/subtitles.vtt') {
+
+        return handleSubtitleVtt(req, res);
+
+    }
+
 
     if (urlPath === '/ext-sub') {
         return handleExtSub(req, res);

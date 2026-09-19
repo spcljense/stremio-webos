@@ -426,7 +426,7 @@
                                                 url: i.resolve(n.streamingServerURL, "/hlsv2/" + t + "/master.m3u8?" + l.toString()),
                                                 subtitles: Array.isArray(n.stream.subtitles) ? n.stream.subtitles.map((function(e) {
                                                     return Object.assign({}, e, {
-                                                        url: "string" == typeof e.url ? i.resolve(n.streamingServerURL, "/subtitles.vtt?" + new URLSearchParams([
+                                                        url: "string" == typeof e.url ? i.resolve(window.__STREMIO_SERVER_URL__||n.streamingServerURL, "/subtitles.vtt?" + new URLSearchParams([
                                                             ["from", e.url]
                                                         ]).toString()) : e.url
                                                     })
@@ -482,7 +482,7 @@
                                         tracks: n.tracks.map((function(e) {
                                             return Object.assign({}, e, {
                                                 fallbackUrl: e.url,
-                                                url: "string" == typeof e.url ? i.resolve(m.streamingServerURL, "/subtitles.vtt?" + new URLSearchParams([
+                                                url: "string" == typeof e.url ? i.resolve(window.__STREMIO_SERVER_URL__||m.streamingServerURL, "/subtitles.vtt?" + new URLSearchParams([
                                                     ["from", e.url]
                                                 ]).toString()) : e.url
                                             })
@@ -20332,6 +20332,277 @@
                     S = document.createElement("style");
                 t.appendChild(S), S.sheet.insertRule("video::cue { font-size: 4vmin; color: rgb(255, 255, 255); background-color: rgba(0, 0, 0, 0); text-shadow: rgb(34, 34, 34) 1px 1px 0.1em; }");
                 var A = document.createElement("video");
+                /* PGS92_EMBEDDED_HTML_SUBS_BEGIN */
+                var __pgs92HtmlSubTimer = null,
+                    __pgs92HtmlSubToken = 0,
+                    __pgs92HtmlSubTrack = null,
+                    __pgs92HtmlSubOverlay = null,
+                    __pgs92HtmlSubKey = "";
+
+                function __pgs92EnsureHtmlSubOverlay() {
+                    var parent = A.parentNode || t;
+
+                    if (!parent) return null;
+
+                    if (!__pgs92HtmlSubOverlay ||
+                        __pgs92HtmlSubOverlay.parentNode !== parent) {
+
+                        if (__pgs92HtmlSubOverlay &&
+                            __pgs92HtmlSubOverlay.parentNode) {
+                            __pgs92HtmlSubOverlay.parentNode.removeChild(
+                                __pgs92HtmlSubOverlay
+                            );
+                        }
+
+                        __pgs92HtmlSubOverlay = document.createElement("div");
+                        __pgs92HtmlSubOverlay.id = "pgs92EmbeddedHtmlSubtitles";
+
+                        var st = __pgs92HtmlSubOverlay.style;
+                        st.position = "absolute";
+                        st.left = "5vw";
+                        st.right = "5vw";
+                        st.zIndex = "12";
+                        st.textAlign = "center";
+                        st.pointerEvents = "none";
+                        st.fontFamily = "Arial, sans-serif";
+                        st.fontWeight = "500";
+                        st.lineHeight = "1.28";
+                        st.whiteSpace = "pre-wrap";
+                        st.wordBreak = "break-word";
+                        st.display = "none";
+
+                        parent.appendChild(__pgs92HtmlSubOverlay);
+                    }
+
+                    return __pgs92HtmlSubOverlay;
+                }
+
+                function __pgs92UpdateHtmlSubStyle() {
+                    var overlay = __pgs92EnsureHtmlSubOverlay();
+
+                    if (!overlay) return null;
+
+                    var size = Number(f);
+                    if (!isFinite(size) || size <= 0) size = 100;
+
+                    /* Exact percentage scale. */
+                    overlay.style.fontSize = (size / 25) + "vmin";
+
+                    var offset = parseFloat(x);
+                    if (!isFinite(offset)) offset = 0;
+
+                    var bottomOffset = Math.max(0, Math.min(95, offset + 3.5));
+                    overlay.style.bottom = bottomOffset + "%";
+                    overlay.style.opacity =
+                        Math.max(0, Math.min(100,
+                            isFinite(Number(_)) ? Number(_) : 100
+                        )) / 100;
+
+                    return overlay;
+                }
+
+                function __pgs92ClearEmbeddedHtmlSubtitles() {
+                    __pgs92HtmlSubToken++;
+
+                    if (__pgs92HtmlSubTimer !== null) {
+                        clearTimeout(__pgs92HtmlSubTimer);
+                        __pgs92HtmlSubTimer = null;
+                    }
+
+                    __pgs92HtmlSubTrack = null;
+                    __pgs92HtmlSubKey = "";
+
+                    if (__pgs92HtmlSubOverlay) {
+                        __pgs92HtmlSubOverlay.innerHTML = "";
+                        __pgs92HtmlSubOverlay.style.display = "none";
+                    }
+                }
+
+                function __pgs92RenderEmbeddedHtmlSubtitles() {
+                    if (!__pgs92HtmlSubTrack ||
+                        null === D ||
+                        !p ||
+                        0 !== String(p).indexOf("EMBEDDED_")) {
+                        __pgs92ClearEmbeddedHtmlSubtitles();
+                        return;
+                    }
+
+                    var overlay = __pgs92UpdateHtmlSubStyle();
+                    if (!overlay) return;
+
+                    var cues = [];
+
+                    try {
+                        cues = Array.from(
+                            __pgs92HtmlSubTrack.activeCues || []
+                        );
+                    } catch (err) {
+                        cues = [];
+                    }
+
+                    var key = cues.map(function(cue) {
+                        return String(cue.startTime) + "|" +
+                               String(cue.endTime) + "|" +
+                               String(cue.text || "");
+                    }).join("||");
+
+                    key += "|size=" + String(f) +
+                           "|offset=" + String(x) +
+                           "|color=" + String(k) +
+                           "|bg=" + String(L) +
+                           "|opacity=" + String(_);
+
+                    if (key !== __pgs92HtmlSubKey) {
+                        __pgs92HtmlSubKey = key;
+                        overlay.innerHTML = "";
+
+                        cues.forEach(function(cue) {
+                            String(cue.text || "")
+                                .split("\n")
+                                .forEach(function(text) {
+                                    text = String(text || "").trim();
+                                    if (!text) return;
+
+                                    var row = document.createElement("div");
+                                    var line = document.createElement("span");
+                                    var shadow = document.createElement("span");
+                                    var foreground = document.createElement("span");
+
+                                    row.style.display = "block";
+                                    row.style.textAlign = "center";
+                                    row.style.margin = "0.06em 0";
+
+                                    line.style.position = "relative";
+                                    line.style.display = "inline-block";
+                                    line.style.maxWidth = "90vw";
+                                    line.style.padding = "0 0.08em";
+                                    line.style.background =
+                                        L || "rgba(0, 0, 0, 0)";
+
+                                    shadow.style.position = "absolute";
+                                    shadow.style.left = "0.08em";
+                                    shadow.style.right = "0.08em";
+                                    shadow.style.top = "0";
+                                    shadow.style.bottom = "0";
+                                    shadow.style.zIndex = "0";
+                                    shadow.style.color = "transparent";
+                                    shadow.style.pointerEvents = "none";
+
+                                    /*
+                                     * Separate black edge layer.
+                                     * Foreground itself has no shadow.
+                                     */
+                                    shadow.style.textShadow =
+                                        "-0.08em -0.08em 0 #000," +
+                                        "0 -0.08em 0 #000," +
+                                        "0.08em -0.08em 0 #000," +
+                                        "-0.08em 0 0 #000," +
+                                        "0.08em 0 0 #000," +
+                                        "-0.08em 0.08em 0 #000," +
+                                        "0 0.08em 0 #000," +
+                                        "0.08em 0.08em 0 #000";
+
+                                    foreground.style.position = "relative";
+                                    foreground.style.display = "inline-block";
+                                    foreground.style.zIndex = "1";
+                                    foreground.style.color =
+                                        k || "rgb(255, 255, 255)";
+                                    foreground.style.textShadow = "none";
+
+                                    shadow.textContent = text;
+                                    foreground.textContent = text;
+
+                                    line.appendChild(shadow);
+                                    line.appendChild(foreground);
+                                    row.appendChild(line);
+                                    overlay.appendChild(row);
+                                });
+                        });
+
+                        overlay.style.display =
+                            cues.length ? "block" : "none";
+                    }
+
+                    __pgs92HtmlSubTimer = setTimeout(
+                        __pgs92RenderEmbeddedHtmlSubtitles,
+                        120
+                    );
+                }
+
+                function __pgs92ActivateEmbeddedHtmlSubtitles(index) {
+                    __pgs92HtmlSubToken++;
+
+                    var token = __pgs92HtmlSubToken;
+                    var attempts = 0;
+
+                    if (__pgs92HtmlSubTimer !== null) {
+                        clearTimeout(__pgs92HtmlSubTimer);
+                        __pgs92HtmlSubTimer = null;
+                    }
+
+                    __pgs92HtmlSubTrack = null;
+                    __pgs92HtmlSubKey = "";
+
+                    function waitForCues() {
+                        if (token !== __pgs92HtmlSubToken) return;
+                        if (null === D || p !== "EMBEDDED_" + index) return;
+
+                        var list = A.textTracks;
+                        var track = null;
+
+                        if (list) {
+                            track = list[index] ||
+                                (list.item ? list.item(index) : null);
+                        }
+
+                        if (track) {
+                            /*
+                             * hidden keeps cues active without letting
+                             * Blink draw its own subtitle layer.
+                             * LG native rendering remains enabled here.
+                             */
+                            try {
+                                Array.from(list).forEach(function(candidate, i) {
+                                    candidate.mode =
+                                        i === index ? "hidden" : "disabled";
+                                });
+                            } catch (err) {}
+
+                            var count = 0;
+
+                            try {
+                                count = Array.from(track.cues || []).length;
+                            } catch (err) {
+                                count = 0;
+                            }
+
+                            if (count > 0) {
+                                __pgs92HtmlSubTrack = track;
+
+                                /*
+                                 * Only now disable LG native rendering.
+                                 * If webOS exposes no cues, native remains
+                                 * visible as automatic fallback.
+                                 */
+                                E(!1);
+
+                                __pgs92RenderEmbeddedHtmlSubtitles();
+                                return;
+                            }
+                        }
+
+                        attempts++;
+
+                        if (attempts < 400) {
+                            __pgs92HtmlSubTimer =
+                                setTimeout(waitForCues, 150);
+                        }
+                    }
+
+                    __pgs92HtmlSubTimer =
+                        setTimeout(waitForCues, 150);
+                }
+                /* PGS92_EMBEDDED_HTML_SUBS_END */
                 A.style.width = "100%", A.style.height = "100%", A.style.backgroundColor = "black", A.controls = !1, A.onerror = function() {
                     ! function() {
                         if (w) return;
@@ -20628,7 +20899,7 @@
                             break;
                         case "selectedSubtitlesTrackId":
                             if (A.mediaId && null !== D && 0 === (t || "").indexOf("EMBEDDED_")) {
-                                E(!0), b.bg_opacity = "none" === b.bg_color ? 0 : 255, ["setSubtitleCharacterColor", "setSubtitleBackgroundColor", "setSubtitlePosition", "setSubtitleFontSize", "setSubtitleBackgroundOpacity", "setSubtitleCharacterOpacity"].forEach((function(e) {
+                                __pgs92HtmlSubTrack || E(!0), b.bg_opacity = "none" === b.bg_color ? 0 : 255, (__pgs92HtmlSubTrack ? [] : ["setSubtitleCharacterColor", "setSubtitleBackgroundColor", "setSubtitlePosition", "setSubtitleFontSize", "setSubtitleBackgroundOpacity", "setSubtitleCharacterOpacity"]).forEach((function(e) {
                                     l({
                                         method: e,
                                         parameters: {
@@ -20659,15 +20930,15 @@
                                             mediaId: A.mediaId,
                                             index: r
                                         }
-                                    }, e, e)
+                                    }, e, e), __pgs92ActivateEmbeddedHtmlSubtitles(r)
                                 }), 500)
-                            } - 1 === (t || "").indexOf("EMBEDDED_") && (p = null, G("selectedSubtitlesTrackId"), E(!1));
+                            } - 1 === (t || "").indexOf("EMBEDDED_") && (p = null, __pgs92ClearEmbeddedHtmlSubtitles(), G("selectedSubtitlesTrackId"), E(!1));
                             break;
                         case "subtitlesOffset":
                             if (null !== t && isFinite(t)) {
                                 x = t;
                                 var n = (h = Math.max(0, Math.min(100, parseInt(x, 10)))) <= 0 ? -3 : h <= 5 ? -2 : h <= 10 ? 0 : h <= 15 ? 2 : h <= 20 && 4;
-                                !1 === n && (n = -2), b.position = n, A.mediaId && l({
+                                !1 === n && (n = -2), b.position = n, !__pgs92HtmlSubTrack && A.mediaId && l({
                                     method: "setSubtitlePosition",
                                     parameters: {
                                         mediaId: A.mediaId,

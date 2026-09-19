@@ -6,10 +6,10 @@ const path = require('node:path');
 const assert = require('node:assert/strict');
 const root = process.env.FRONTEND_ROOT || path.join(__dirname, '..', 'frontend-webos');
 
-async function mount(page, time = 35000, paused = false) {
+async function mount(page, time = 35000, paused = false, skipDbFixture = null) {
     await page.goto('about:blank');
     await page.setContent('<html><head></head><body style="background:#171719;color:white"><div id="root"></div></body></html>');
-    for (const file of ['main.js', 'player.chunk.js']) {
+    for (const file of ['skip-segments.js', 'main.js', 'player.chunk.js']) {
         let source = fs.readFileSync(path.join(root, file), 'utf8');
         if (file === 'player.chunk.js') {
             assert(source.includes('C = f(),'));
@@ -17,7 +17,14 @@ async function mount(page, time = 35000, paused = false) {
         }
         await page.addScriptTag({ content: source });
     }
-    await page.evaluate(({ time, paused }) => {
+    await page.evaluate(({ time, paused, skipDbFixture }) => {
+        window.skipDbRequests = [];
+        if (skipDbFixture) {
+            window.fetch = (url, options) => {
+                window.skipDbRequests.push({ url, options });
+                return Promise.resolve({ ok: true, json: () => Promise.resolve(skipDbFixture.response) });
+            };
+        }
         const modules = Object.assign({}, ...self.webpackChunkstremio_theater.map(chunk => chunk[1]));
         const cache = {};
         function req(id) {
@@ -61,7 +68,9 @@ async function mount(page, time = 35000, paused = false) {
         };
         const playerState = {
             title: 'Skip Intro regression fixture', nextVideo: null, metaItem: null, streamState: null,
-            introOutro: { intro: { from: 30000, to: 90000 }, outro: 1700000 }, subtitles: []
+            selected: skipDbFixture ? { streamRequest: { path: { id: skipDbFixture.id } } } : null,
+            seriesInfo: skipDbFixture ? { season: skipDbFixture.season, episode: skipDbFixture.episode } : null,
+            introOutro: skipDbFixture && skipDbFixture.noOfficial ? null : { intro: { from: 30000, to: 90000 }, outro: 1700000 }, subtitles: []
         };
         const settings = { bingeWatching: false, seekTimeDuration: 10000, nextVideoNotificationDuration: 30000, audioLanguage: null, secondaryAudioLanguage: null, subtitlesLanguage: null, secondarySubtitlesLanguage: null };
         stub(9132, {
@@ -74,7 +83,7 @@ async function mount(page, time = 35000, paused = false) {
         });
         const nav = req(6870), Player = req(7826).default;
         dom.XX(() => solid.a0(nav.i9, { get children() { return solid.a0(Player, {}); } }), document.getElementById('root'));
-    }, { time, paused });
+    }, { time, paused, skipDbFixture });
     await page.waitForTimeout(3300); // The shipped controls hide after three seconds.
 }
 
@@ -174,6 +183,34 @@ async function mount(page, time = 35000, paused = false) {
         assert.equal(await page.getByText('PLAYER_SKIP_OUTRO', { exact: true }).count(), 0);
         assert.equal(await page.locator('[focused]').evaluate(element => !!element.closest('[class*="overlay-"]')), true, 'normal controls regain focus after dismiss');
         console.log('PASS: Dismiss Outro with remote and restore playback controls');
+
+        const skipDbFixture = {
+            id: 'tt7654321:1:12', season: 1, episode: 12, noOfficial: true,
+            response: { segments: {
+                recap: { start_ms: 10000, end_ms: 40000, match: 'exact', confidence: 0.9 },
+                intro: { start_ms: 40000, end_ms: 100000, match: 'exact', confidence: 0.95 },
+                outro: { start_ms: 1600000, end_ms: 1700000, match: 'shifted', confidence: 0.85 },
+                preview: { start_ms: 1700000, end_ms: 1780000, match: 'exact', confidence: 0.8 }
+            } }
+        };
+        await mount(page, 15000, false, skipDbFixture);
+        assert.deepEqual(await page.locator('[focused]').allTextContents(), ['Skip recap'], 'free SkipDB recap gets a skip button');
+        await page.keyboard.press('ArrowDown');
+        assert.equal(await page.locator('.skip-segment-marker').count(), 4, 'all four segment blocks render on the timeline');
+        assert.deepEqual(
+            await page.locator('.skip-segment-marker').evaluateAll(elements => elements.map(element => element.getAttribute('data-segment-type')).sort()),
+            ['intro', 'outro', 'preview', 'recap']
+        );
+        assert.match(await page.locator('.skip-segment-legend').innerText(), /Recap 00:00:10–00:00:40/);
+        assert.match(await page.locator('.skip-segment-legend').innerText(), /Preview 00:28:20–00:29:40/);
+        assert.equal(await page.evaluate(() => skipDbRequests.length), 1, 'one keyless API read is made per episode/duration');
+        assert.match(await page.evaluate(() => skipDbRequests[0].url), /imdb_id=tt7654321/);
+        assert.equal(await page.evaluate(() => skipDbRequests[0].options.headers), undefined, 'no shared API key is shipped');
+        await page.waitForTimeout(3300);
+        await page.keyboard.press('Enter');
+        assert.equal(await page.evaluate(() => testVideo.state().time), 40000, 'Skip recap uses the external segment end');
+        assert.equal(await page.getByText('Skip recap', { exact: true }).count(), 0, 'external popup closes immediately after skip');
+        console.log('PASS: free recap/intro/outro/preview blocks, time legend, focus escape and skip');
 
         await mount(page, 120000);
         await page.keyboard.press('Enter');
