@@ -3,14 +3,13 @@ name: Release
 on:
   push:
     tags:
-      - 'stremio-webos-*'
+      - 'v*'
 
 permissions:
   contents: write
 
 jobs:
   release:
-    if: github.ref != 'refs/tags/stremio-webos-1.1.4'
     runs-on: ubuntu-latest
 
     steps:
@@ -18,7 +17,7 @@ jobs:
 
       - name: Get version
         id: version
-        run: echo "version=${GITHUB_REF_NAME#stremio-webos-}" >> "$GITHUB_OUTPUT"
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
 
       - name: Set package version
         run: |
