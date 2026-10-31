@@ -24,7 +24,9 @@ service/bin/ffmpeg service/bin/ffprobe:
 	@rm -rf /tmp/stremio-ffmpeg
 
 build: service/server.js service/bin/ffmpeg service/bin/ffprobe
-	@echo "==> Building webOS frontend..."
+	@echo "==> Applying webOS compatibility patch to Stremio server..."
+	@node scripts/patch-server.js service/server.js
+	@echo "==> Building webOS frontend...
 	@test -d frontend-webos || (echo "ERROR: frontend-webos/ ontbreekt" && exit 1)
 	@rm -rf service/www
 	@cp -a frontend-webos service/www

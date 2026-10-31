@@ -20,6 +20,7 @@ var proxyAgent = new http.Agent({
 
 var service = new Service('io.strem.webos.server');
 var ready = false;
+var serverPort = null;
 var streamingReady = false;
 var pendingMessages = [];
 
@@ -29,7 +30,7 @@ service.activityManager.create('keepAlive', function() {});
 // Register the start method — responds once the HTTP server is listening
 service.register('start', function(message) {
     if (ready) {
-        message.respond({ ready: true });
+        message.respond({ ready: true, port: serverPort });
     } else {
         pendingMessages.push(message);
     }
@@ -358,12 +359,13 @@ var server = http.createServer(function(req, res) {
     });
 });
 
-server.listen(8080, function() {
+server.listen(0, '127.0.0.1', function() {
+    serverPort = server.address().port;
     ready = true;
 
     // Respond immediately so the UI can start loading without waiting
     // for the Stremio streaming server to initialize.
-    pendingMessages.forEach(function(msg) { msg.respond({ ready: true }); });
+    pendingMessages.forEach(function(msg) { msg.respond({ ready: true, port: serverPort }); });
     pendingMessages = [];
 
     // Point the streaming server at the bundled ffmpeg binaries.

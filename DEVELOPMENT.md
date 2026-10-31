@@ -6,7 +6,7 @@ Custom Stremio app for LG webOS TVs. Uses a locally maintained webOS-only Stremi
 
 Several files are **downloaded/generated at build time** and will not exist in a fresh clone:
 
-- `service/server.js` — downloaded from `dl.strem.io` (Stremio streaming server, webOS build)
+- `service/server.js` — downloaded from `dl.strem.io` (Stremio streaming server, webOS build) and patched for larger remote-stream buffering
 - `service/www/` — built from Vidaa frontend tarball + patches
 
 Run `make build` to generate these before inspecting or modifying them.
@@ -14,14 +14,14 @@ Run `make build` to generate these before inspecting or modifying them.
 ## Structure
 
 ```
-app/                  # webOS app shell — starts service, redirects to http://127.0.0.1:8080
+app/                  # webOS app shell — starts service, redirects to http://127.0.0.1:<dynamic-port>
   appinfo.json        # webOS app manifest (id: io.strem.tv)
   index.html          # Starts server via Luna, polls :8080, redirects when ready
   services.json       # Links to server service
   icon.png
 
 service/              # webOS service
-  launch.js           # Entry point: serves www/ on :8080, proxies API to streaming server on :11470
+  launch.js           # Entry point: serves www/ on an OS-assigned loopback port, proxies API to streaming server on :11470
   index.html          # Theater entry point for webOS (sets __STREMIO_SERVER_URL__ to :8080)
   package.json        # Service manifest (main: launch.js)
   services.json       # Luna service registration
@@ -36,14 +36,14 @@ patches/              # Patches applied to Vidaa frontend files during build
 
 1. `make build` downloads the Vidaa frontend (pinned to a specific commit) and Stremio server, copies frontend files into `service/www/`, applies patches
 2. `make deploy` packages the IPK via `ares-package` and installs via `ares-install`
-3. On launch: `app/index.html` starts the server service via Luna, polls `:8080` with an `<img>` load, redirects when ready
-4. `service/launch.js` serves the Theater frontend on `:8080` and proxies all non-static requests to the streaming server on `:11470`
+3. On launch: `app/index.html` starts the server service via Luna, polls `a dynamically assigned loopback port` with an `<img>` load, redirects when ready
+4. `service/launch.js` serves the Theater frontend on `a dynamically assigned loopback port` and proxies all non-static requests to the streaming server on `:11470`
 
-The proxy exists because the app loads from `file://` which cannot XHR/fetch to `http://` origins (CORS restriction on webOS Chrome 68). Serving everything from `:8080` makes all requests same-origin.
+The proxy exists because the app loads from `file://` which cannot XHR/fetch to `http://` origins (CORS restriction on webOS Chrome 68). Serving everything from `a dynamically assigned loopback port` makes all requests same-origin.
 
 ## Patches
 
-Patches in `patches/` are applied to Vidaa frontend files during `make build`. They are unified diffs against the pinned Vidaa commit.
+Patches in `patches/` are applied to Vidaa frontend files during `make build`. They are unified diffs against the pinned Vidaa commit. The Stremio server compatibility patch in `scripts/patch-server.js` is applied to the downloaded server bundle during the same build.
 
 ### video.chunk.js.patch
 

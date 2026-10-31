@@ -55,8 +55,12 @@ bridge.onservicecallback = function(response) {
     try {
         var data = JSON.parse(response);
         if (data && data.ready) {
+            if (!data.port || !/^[0-9]+$/.test(String(data.port))) {
+                console.error("Service returned an invalid HTTP port:", data.port);
+                return;
+            }
             done = true;
-            location.replace('http://127.0.0.1:8080/');
+            location.replace('http://127.0.0.1:' + data.port + '/');
         }
     } catch(e) {
         console.error("Bridge parse error:", e);
@@ -66,24 +70,7 @@ bridge.onservicecallback = function(response) {
 // Call the background service
 bridge.call('luna://io.strem.webos.server/start', '{}');
 
-// Secondary polling fallback in case Luna notification is delayed
-var pollCount = 0;
-var pollInterval = setInterval(function() {
-    if (done) {
-        clearInterval(pollInterval);
-        return;
-    }
-    pollCount++;
-    var img = new Image();
-    img.onload = function() {
-        done = true;
-        clearInterval(pollInterval);
-        location.replace('http://127.0.0.1:8080/');
-    };
-    img.src = 'http://127.0.0.1:8080/favicon.ico?_t=' + Date.now();
-
-    if (pollCount > 30) clearInterval(pollInterval);
-}, 1000);
+// The Luna start response includes the dynamically assigned HTTP port.
 
 // Remote control Back button (Keycode 461)
 window.addEventListener('keydown', function(e) {
