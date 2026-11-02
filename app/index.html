@@ -40,7 +40,6 @@
   </style>
 </head>
 <body>
-
 <div id="loader" style="display:flex; flex-direction:column; align-items:center;">
   <div class="spinner"></div>
   <div id="status">Loading Stremio...</div>
@@ -48,31 +47,50 @@
 
 <script>
 var done = false;
-
-// Global persistent bridge prevents V8 garbage collection
 var bridge = new PalmServiceBridge();
+var timeoutId = null;
+
+function openStremio(port) {
+    if (done) return;
+
+    port = Number(port);
+    if (!isFinite(port) || Math.floor(port) !== port || port < 1 || port > 65535) {
+        console.error("Invalid Stremio server port:", port);
+        return;
+    }
+
+    done = true;
+    if (timeoutId !== null) clearTimeout(timeoutId);
+
+    location.replace('http://127.0.0.1:' + port + '/');
+}
+
 bridge.onservicecallback = function(response) {
     try {
         var data = JSON.parse(response);
-        if (data && data.ready) {
-            if (!data.port || !/^[0-9]+$/.test(String(data.port))) {
-                console.error("Service returned an invalid HTTP port:", data.port);
-                return;
-            }
-            done = true;
-            location.replace('http://127.0.0.1:' + data.port + '/');
+        if (data && data.ready === true && data.port) {
+            openStremio(data.port);
+        } else {
+            console.error("Stremio service not ready:", response);
         }
-    } catch(e) {
+    } catch (e) {
         console.error("Bridge parse error:", e);
     }
 };
 
-// Call the background service
 bridge.call('luna://io.strem.webos.server/start', '{}');
 
-// The Luna start response includes the dynamically assigned HTTP port.
+timeoutId = setTimeout(function() {
+    if (done) return;
 
-// Remote control Back button (Keycode 461)
+    document.body.innerHTML =
+        '<div style="color:#fff;text-align:center;max-width:600px;padding:0 24px">' +
+        '<div style="font-size:26px;font-weight:600;margin-bottom:12px;color:#ff5b5b">Stremio service did not start</div>' +
+        '<div style="color:rgba(255,255,255,.6);font-size:16px;line-height:1.5;margin-bottom:32px">Try again, or check Homebrew Channel logs if this keeps happening.</div>' +
+        '<button onclick="location.reload()" style="padding:12px 32px;font-size:18px;background:#7b5bf5;color:#fff;border:0;border-radius:8px;cursor:pointer;outline:none">Retry</button>' +
+        '</div>';
+}, 30000);
+
 window.addEventListener('keydown', function(e) {
     if (e.keyCode === 461 || e.keyCode === 27) {
         if (window.PalmSystem && window.PalmSystem.close) {
@@ -82,17 +100,6 @@ window.addEventListener('keydown', function(e) {
         }
     }
 });
-
-// 30s timeout fallback screen
-setTimeout(function() {
-    if (done) return;
-    document.body.innerHTML =
-        '<div style="color:#fff;text-align:center;max-width:600px;padding:0 24px">' +
-        '<div style="font-size:26px;font-weight:600;margin-bottom:12px;color:#ff5b5b">Stremio service didn\'t start</div>' +
-        '<div style="color:rgba(255,255,255,0.6);font-size:16px;line-height:1.5;margin-bottom:32px">Try again, or check Homebrew Channel logs if this keeps happening.</div>' +
-        '<button onclick="location.reload()" style="padding:12px 32px;font-size:18px;background:#7b5bf5;color:#fff;border:0;border-radius:8px;cursor:pointer;outline:none">Retry</button>' +
-        '</div>';
-}, 30000);
 </script>
 </body>
 </html>
