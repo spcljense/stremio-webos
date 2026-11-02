@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Stremio</title>
     <link rel="stylesheet" href="profiles-lite.css">
-    <script>window.__STREMIO_SERVER_URL__ = 'http://127.0.0.1:8080';</script>
+    <script>window.__STREMIO_SERVER_URL__ = window.location.origin;</script>
     <script>
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.getRegistrations().then(function(rs) {
@@ -19,7 +19,22 @@
     <script defer src="service.js"></script>
     <script defer src="webOSTV.js"></script>
     <link rel="stylesheet" href="layout-overlap-fix.css">
-<style>video::cue, video::-webkit-media-text-track-display { display: none !important; opacity: 0 !important; visibility: hidden !important; }
+<style>
+  /* Inter Medium is supplied by the user as frontend-webos/inter.ttf. */
+  @font-face {
+    font-family: 'Inter';
+    src: url('./inter.ttf') format('truetype');
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+  }
+
+  /* Use Inter for native WebVTT / embedded text-track subtitles. */
+  video::cue {
+    font-family: 'Inter', sans-serif !important;
+    font-weight: 500 !important;
+  }
+
   /* === SLEEK SOURCE SELECTION SCREEN === */
   /* When the streams view is active, collapse the top header to a compact title bar */
   div:has(> div[class*="streams-"]) div[class*="item-preview-"],
