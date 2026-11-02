@@ -359,21 +359,40 @@ var server = http.createServer(function(req, res) {
     });
 });
 
-server.listen(0, '127.0.0.1', function() {
-    serverPort = server.address().port;
-    ready = true;
+var portFile = path.join(__dirname, 'server-port.txt');
+var savedPort = 0;
+var dynamicRetryUsed = false;
 
-    // Respond immediately so the UI can start loading without waiting
-    // for the Stremio streaming server to initialize.
-    pendingMessages.forEach(function(msg) { msg.respond({ ready: true, port: serverPort }); });
+try {
+    var storedPort = parseInt(fs.readFileSync(portFile, 'utf8'), 10);
+    if (storedPort > 0 && storedPort <= 65535) savedPort = storedPort;
+} catch (_) {}
+
+function onHttpServerListening() {
+    var address = server.address();
+    if (!address || typeof address.port !== 'number' || address.port < 1 || address.port > 65535) {
+        console.error('Local HTTP server returned an invalid listening address:', address);
+        return;
+    }
+
+    serverPort = address.port;
+    ready = true;
+    console.log('Stremio web server listening on 127.0.0.1:' + serverPort);
+
+    try {
+        fs.writeFileSync(portFile, String(serverPort), 'utf8');
+    } catch (e) {
+        console.error('Could not save Stremio HTTP port:', e);
+    }
+
+    pendingMessages.forEach(function(msg) {
+        try { msg.respond({ ready: true, port: serverPort }); } catch (_) {}
+    });
     pendingMessages = [];
 
-    // Point the streaming server at the bundled ffmpeg binaries.
     process.env.FFMPEG_BIN = path.join(__dirname, 'bin', 'ffmpeg');
     process.env.FFPROBE_BIN = path.join(__dirname, 'bin', 'ffprobe');
 
-    // Defer loading the large Stremio streaming server until the UI
-    // server has started and the ready response has been sent.
     setImmediate(function() {
         try {
             require('./server.js');
@@ -381,9 +400,26 @@ server.listen(0, '127.0.0.1', function() {
             console.error('Failed to load Stremio server.js:', e);
         }
     });
+}
+
+server.on('error', function(err) {
+    if (savedPort && !dynamicRetryUsed && err && err.code === 'EADDRINUSE') {
+        dynamicRetryUsed = true;
+        console.warn('Saved port ' + savedPort + ' is occupied; selecting another free port.');
+        server.listen(0, '127.0.0.1', onHttpServerListening);
+        return;
+    }
+
+    console.error('Local HTTP server failed:', err);
+    pendingMessages.forEach(function(msg) {
+        try { msg.respond({ ready: false, error: String(err && err.message || err) }); } catch (_) {}
+    });
+    pendingMessages = [];
 });
 
-// Clean shutdown handler to free port 8080 on service stop/restart
+server.listen(savedPort || 0, '127.0.0.1', onHttpServerListening);
+
+// Close the dynamically assigned HTTP port when webOS stops the service.
 process.on('SIGTERM', function() {
     try { server.close(); } catch (_) {}
     process.exit(0);
