@@ -48,7 +48,7 @@ function assHeader(resX, resY) {
     var mv = Math.max(10, Math.round(40 * H / 1080));
     return '[Script Info]\nScriptType: v4.00+\nPlayResX: ' + W + '\nPlayResY: ' + H + '\nWrapStyle: 0\nScaledBorderAndShadow: yes\n\n'
         + '[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n'
-        + 'Style: Default,Liberation Sans,' + fs + ',&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,' + ol + ',0,2,60,60,' + mv + ',1\n\n'
+        + 'Style: Default,Inter,' + fs + ',&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,' + ol + ',0,2,60,60,' + mv + ',1\n\n'
         + '[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n';
 }
 
@@ -57,8 +57,11 @@ function srtToAss(src, resX, resY) {
     // Strip UTF-8 BOM
     src = src.replace(/^\uFEFF/, '').replace(/^﻿/, '');
 
-    // Pass through if already ASS/SSA
-    if (/^\s*\[Script Info\]/.test(src) || /\n\s*Dialogue\s*:/.test(src)) return src;
+    // Keep ASS/SSA timing, positioning and styling, but normalize every
+    // declared style to Inter so embedded ASS tracks use the app font too.
+    if (/^\s*\[Script Info\]/.test(src) || /\n\s*Dialogue\s*:/.test(src)) {
+        return src.replace(/^(Style:\s*[^,\r\n]+,)[^,\r\n]*/gmi, '$1Inter');
+    }
 
     var head = assHeader(resX, resY);
     var out = [];
